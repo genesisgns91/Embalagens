@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magius · Controle de Embalagens</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14; --surface: #151820; --surface2: #1c2030; --border: #252a3a;
+    --accent: #00e5a0; --accent2: #0077ff; --warn: #ff6b35;
+    --text: #e8eaf0; --text2: #7a8099; --text3: #4a5068;
+    --radius: 10px; --font-mono: 'Space Mono', monospace; --font-body: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; font-size: 15px; }
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  #loading-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 999; flex-direction: column; gap: 16px; }
+  .loader-ring { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #auth-screen { display: none; min-height: 100vh; align-items: center; justify-content: center; padding: 24px; }
+  .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 420px; }
+  .auth-logo { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; }
+  .auth-title { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+  .auth-sub { color: var(--text2); font-size: 13px; margin-bottom: 32px; }
+  .auth-tabs { display: flex; gap: 4px; background: var(--bg); border-radius: 8px; padding: 4px; margin-bottom: 28px; }
+  .auth-tab { flex: 1; padding: 8px; background: none; border: none; color: var(--text2); font-family: var(--font-body); font-size: 13px; cursor: pointer; border-radius: 6px; transition: all .2s; }
+  .auth-tab.active { background: var(--surface2); color: var(--text); font-weight: 500; }
+
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 500; letter-spacing: .5px; }
+  .field input, .field select, .field textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; color: var(--text); font-family: var(--font-body); font-size: 14px; transition: border-color .2s; outline: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent2); }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .field input[readonly] { color: var(--text2); cursor: default; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border: none; border-radius: var(--radius); font-family: var(--font-body); font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s; }
+  .btn-primary { background: var(--accent); color: #0d0f14; width: 100%; padding: 13px; }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent2); }
+  .btn-danger { background: rgba(255,107,53,.15); color: var(--warn); border: 1px solid rgba(255,107,53,.3); }
+  .btn-danger:hover { background: rgba(255,107,53,.25); }
+  .btn-sm { padding: 7px 14px; font-size: 13px; }
+  .btn-icon { padding: 8px; border-radius: 8px; }
+  .error-msg { background: rgba(255,107,53,.1); border: 1px solid rgba(255,107,53,.3); color: var(--warn); border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+
+  #app { display: none; }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 58px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-brand { font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 12px; color: var(--text2); }
+  .user-badge span { color: var(--text); font-weight: 500; }
+  .nav-tabs { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; padding: 0 24px; gap: 4px; overflow-x: auto; }
+  .nav-tab { padding: 14px 18px; background: none; border: none; color: var(--text2); font-family: var(--font-body); font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .2s; font-weight: 500; white-space: nowrap; }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .nav-tab:hover:not(.active) { color: var(--text); }
+  .page { display: none; padding: 28px 24px; max-width: 1100px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; gap: 16px; flex-wrap: wrap; }
+  .page-title { font-size: 22px; font-weight: 600; }
+  .page-sub { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px; margin-bottom: 24px; }
+  .form-card-title { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+  .form-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
+  .emb-row { display: grid; grid-template-columns: 1fr 120px auto; gap: 10px; align-items: end; margin-bottom: 10px; }
+  .btn-add-emb { background: none; border: 1px dashed var(--border); color: var(--text2); border-radius: var(--radius); padding: 9px 16px; cursor: pointer; font-family: var(--font-body); font-size: 13px; transition: all .2s; width: 100%; margin-top: 8px; }
+  .btn-add-emb:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-rem-emb { background: rgba(255,107,53,.1); border: 1px solid rgba(255,107,53,.2); color: var(--warn); border-radius: 8px; padding: 10px 12px; cursor: pointer; font-size: 16px; transition: all .2s; }
+  .btn-rem-emb:hover { background: rgba(255,107,53,.25); }
+
+  .foto-zone { border: 1.5px dashed var(--border); border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: border-color .2s; }
+  .foto-zone:hover { border-color: var(--accent2); }
+  .foto-zone-icon { font-size: 28px; margin-bottom: 8px; }
+  .foto-zone-text { color: var(--text2); font-size: 13px; }
+  .foto-preview { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .foto-thumb { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .foto-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .foto-thumb .del-foto { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,.7); color: #fff; border: none; border-radius: 4px; width: 18px; height: 18px; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+
+  .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .filter-bar .field { margin: 0; flex: 1; min-width: 160px; }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .table-wrap th { background: var(--surface2); padding: 11px 14px; text-align: left; color: var(--text2); font-weight: 500; font-size: 11px; letter-spacing: .5px; text-transform: uppercase; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .table-wrap td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  .table-wrap tr:last-child td { border-bottom: none; }
+  .table-wrap tr:hover td { background: rgba(255,255,255,.02); }
+  .badge-emb { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-family: var(--font-mono); background: rgba(0,119,255,.15); color: #60a5fa; margin: 2px 2px 2px 0; }
+  .tag-foto { display: inline-flex; align-items: center; gap: 4px; background: rgba(0,229,160,.1); color: var(--accent); border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer; border: none; font-family: var(--font-body); }
+  .tag-foto:hover { background: rgba(0,229,160,.2); }
+  .empty-state { padding: 48px; text-align: center; color: var(--text3); }
+  .empty-state .empty-icon { font-size: 32px; margin-bottom: 12px; }
+
+  .export-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .export-bar .count { font-size: 13px; color: var(--text2); }
+  .export-bar .count span { color: var(--text); font-weight: 600; }
+  .export-btns { display: flex; gap: 8px; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 500; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; position: relative; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
+  .modal-close { position: absolute; top: 16px; right: 16px; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); border-radius: 6px; width: 32px; height: 32px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .modal-close:hover { color: var(--text); }
+  .foto-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .foto-gallery img { width: 100%; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; margin-bottom: 20px; }
+  .detail-item label { font-size: 11px; color: var(--text2); display: block; margin-bottom: 2px; }
+  .detail-item span { font-size: 14px; }
+
+  .admin-gate { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 32px; max-width: 400px; margin: 0 auto; }
+  .users-list { display: flex; flex-direction: column; gap: 10px; }
+  .user-row { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .user-info .uname { font-weight: 500; font-size: 14px; }
+  .user-info .uemail { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .user-status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .status-active { background: rgba(0,229,160,.15); color: var(--accent); }
+  .status-blocked { background: rgba(255,107,53,.15); color: var(--warn); }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 14px 18px; font-size: 13px; z-index: 999; transform: translateY(80px); opacity: 0; transition: all .3s; pointer-events: none; max-width: 300px; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { border-left-color: var(--warn); }
+
+  #img-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 600; align-items: center; justify-content: center; }
+  #img-viewer.open { display: flex; }
+  #img-viewer img { max-width: 95vw; max-height: 95vh; border-radius: 8px; object-fit: contain; }
+  #img-viewer-close { position: absolute; top: 16px; right: 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 16px; cursor: pointer; font-family: var(--font-body); font-size: 13px; }
+
+  @media (max-width: 600px) {
+    .page { padding: 20px 16px; } .topbar { padding: 0 16px; }
+    .nav-tabs { padding: 0 8px; } .nav-tab { padding: 12px 10px; font-size: 12px; }
+    .form-card { padding: 20px 16px; } .detail-grid { grid-template-columns: 1fr; }
+    .emb-row { grid-template-columns: 1fr 90px auto; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="loader-ring"></div>
+  <div style="font-size:12px;color:var(--text2);font-family:var(--font-mono);letter-spacing:2px;">CARREGANDO...</div>
+</div>
+
+<div id="auth-screen" style="display:none;">
+  <div class="auth-card">
+    <div class="auth-logo">Magius</div>
+    <div class="auth-title">Controle de Embalagens</div>
+    <div class="auth-sub">Faça login para continuar</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Entrar</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Criar conta</button>
+    </div>
+    <div id="auth-error" class="error-msg"></div>
+    <div id="login-form">
+      <div class="field"><label>E-MAIL</label><input type="email" id="login-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="field"><label>SENHA</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
+    </div>
+    <div id="register-form" style="display:none;">
+      <div class="field"><label>NOME COMPLETO</label><input type="text" id="reg-name" placeholder="Seu nome"></div>
+      <div class="field"><label>E-MAIL</label><input type="email" id="reg-email" placeholder="seu@email.com"></div>
+      <div class="field"><label>SENHA</label><input type="password" id="reg-pass" placeholder="mínimo 6 caracteres"></div>
+      <button class="btn btn-primary" onclick="doRegister()">Criar conta</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">Magius · Embalagens</div>
+    <div class="topbar-right">
+      <div class="user-badge">Olá, <span id="topbar-name">–</span></div>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('registro')">＋ Novo Registro</button>
+    <button class="nav-tab" onclick="switchTab('consulta')">🔍 Consulta</button>
+    <button class="nav-tab" onclick="switchTab('admin')">⚙ Administração</button>
+  </div>
+
+  <!-- REGISTRO -->
+  <div id="tab-registro" class="page active">
+    <div class="page-header">
+      <div><div class="page-title">Novo Registro de Entrada</div><div class="page-sub">Preencha os dados da carga recebida</div></div>
+    </div>
+    <div class="form-card">
+      <div class="form-card-title">🚛 Dados do Transporte</div>
+      <div class="form-grid">
+        <div class="field"><label>DATA / HORA <span style="color:var(--accent);font-size:10px">AUTO</span></label><input type="text" id="f-datetime" readonly></div>
+        <div class="field"><label>USUÁRIO <span style="color:var(--accent);font-size:10px">AUTO</span></label><input type="text" id="f-user" readonly></div>
+        <div class="field"><label>PLACA DO CAMINHÃO *</label><input type="text" id="f-placa" placeholder="ABC-1234" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="field"><label>NOME DO CLIENTE *</label><input type="text" id="f-cliente" placeholder="Razão social do cliente"></div>
+        <div class="field"><label>NÚMERO DA NOTA FISCAL *</label><input type="text" id="f-nota" placeholder="000000"></div>
+      </div>
+    </div>
+    <div class="form-card">
+      <div class="form-card-title">📦 Embalagens Recebidas</div>
+      <div id="emb-list"></div>
+      <button class="btn-add-emb" onclick="addEmbRow()">+ Adicionar embalagem</button>
+    </div>
+    <div class="form-card">
+      <div class="form-card-title">📷 Fotos da Carga</div>
+      <div class="foto-zone" onclick="document.getElementById('foto-input').click()">
+        <input type="file" id="foto-input" accept="image/*" multiple capture="environment" onchange="handleFotos(this)" style="display:none">
+        <div class="foto-zone-icon">📷</div>
+        <div class="foto-zone-text">Toque para fotografar ou selecionar da galeria<br><small style="color:var(--text3)">Aceita múltiplas fotos — comprimidas automaticamente</small></div>
+      </div>
+      <div class="foto-preview" id="foto-preview"></div>
+    </div>
+    <div class="form-card">
+      <div class="form-card-title">📝 Observações</div>
+      <textarea id="f-obs" placeholder="Observações adicionais (opcional)…" rows="3" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-family:var(--font-body);font-size:14px;outline:none;resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-primary" style="flex:1;min-width:160px" id="btn-salvar" onclick="salvarRegistro()">✓ Salvar Registro</button>
+      <button class="btn btn-secondary" onclick="limparForm()">↺ Limpar</button>
+    </div>
+  </div>
+
+  <!-- CONSULTA -->
+  <div id="tab-consulta" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Consulta de Registros</div><div class="page-sub">Últimas entradas de embalagens</div></div>
+    </div>
+    <div class="filter-bar">
+      <div class="field"><label>FILTRAR POR CLIENTE</label><input type="text" id="filter-cliente" placeholder="Digite o nome..." oninput="renderTabela()"></div>
+      <div class="field"><label>FILTRAR POR CÓD. EMBALAGEM</label><input type="text" id="filter-cod" placeholder="Código..." oninput="renderTabela()"></div>
+      <div class="field"><label>DATA INICIAL</label><input type="date" id="filter-data-ini" oninput="renderTabela()"></div>
+      <div class="field"><label>DATA FINAL</label><input type="date" id="filter-data-fim" oninput="renderTabela()"></div>
+      <div style="display:flex;align-items:flex-end;"><button class="btn btn-secondary btn-sm" onclick="limparFiltros()">✕ Limpar</button></div>
+    </div>
+    <div class="export-bar">
+      <div class="count">Exibindo <span id="count-registros">0</span> registros</div>
+      <div class="export-btns">
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportXLSX()">⬇ Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th>Data / Hora</th><th>Usuário</th><th>Placa</th><th>Cliente</th>
+            <th>Nota Fiscal</th><th>Embalagens</th><th>Fotos</th><th>Obs.</th><th>Ações</th>
+          </tr></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div id="empty-state" class="empty-state" style="display:none;">
+        <div class="empty-icon">📭</div><p>Nenhum registro encontrado</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="tab-admin" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Administração</div><div class="page-sub">Gerenciamento de usuários e registros</div></div>
+    </div>
+    <div id="admin-gate-wrap">
+      <div class="admin-gate">
+        <div style="font-size:28px;margin-bottom:12px;">🔐</div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:6px;">Área restrita</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:24px;">Insira a senha de administrador para continuar.</div>
+        <div id="admin-error" class="error-msg"></div>
+        <div class="field"><label>SENHA DE ADMINISTRADOR</label><input type="password" id="admin-pass-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPass()"></div>
+        <button class="btn btn-primary" onclick="checkAdminPass()">Acessar</button>
+      </div>
+    </div>
+    <div id="admin-panel" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+        <div style="font-size:14px;color:var(--text2);">Usuários cadastrados no sistema</div>
+        <button class="btn btn-danger btn-sm" onclick="lockAdmin()">🔒 Bloquear painel</button>
+      </div>
+      <div id="users-list" class="users-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALHES -->
+<div id="modal-detail" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
+    <div class="modal-title">Detalhes do Registro</div>
+    <div class="detail-grid" id="modal-detail-content"></div>
+    <div id="modal-foto-section" style="display:none;">
+      <div style="font-size:11px;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;">Fotos</div>
+      <div class="foto-gallery" id="modal-fotos"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR -->
+<div id="modal-delete" class="modal-overlay">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-delete')">✕</button>
+    <div class="modal-title" style="color:var(--warn);">🗑 Excluir Registro</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.6;">
+      Esta ação é <strong style="color:var(--warn)">irreversível</strong>. O registro será excluído permanentemente.<br><br>
+      Confirme com a senha de administrador:
+    </div>
+    <div id="delete-error" class="error-msg"></div>
+    <div class="field"><label>SENHA DE ADMINISTRADOR</label><input type="password" id="delete-pass-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')confirmDelete()"></div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-danger" style="flex:1" onclick="confirmDelete()">Confirmar Exclusão</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMG VIEWER -->
+<div id="img-viewer">
+  <button id="img-viewer-close" onclick="closeImgViewer()">✕ Fechar</button>
+  <img id="img-viewer-img" src="" alt="">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAmX8gVADeGgS9SFBdN18Y1MmVwzIlC2tE",
+  authDomain: "embalagens-19e30.firebaseapp.com",
+  projectId: "embalagens-19e30",
+  storageBucket: "embalagens-19e30.firebasestorage.app",
+  messagingSenderId: "202746410182",
+  appId: "1:202746410182:web:5275f53f8fe0db3a2b93c7",
+  measurementId: "G-B7DBN6DGGT"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
+const ADMIN_PASS = 'Log#001';
+
+window._registros = [];
+window._fotos = [];
+window._currentUser = null;
+window._pendingDeleteId = null;
+
+// ── AUTH STATE ─────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+  document.getElementById('loading-screen').style.display = 'none';
+  if (user) {
+    window._currentUser = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('topbar-name').textContent = user.displayName || user.email;
+    document.getElementById('f-user').value = user.displayName || user.email;
+    initDatetime();
+    addEmbRow();
+    await loadRegistros();
+  } else {
+    window._currentUser = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    window._registros = [];
+  }
+});
+
+// ── LOGIN ──────────────────────────────────────────────────────────────
+window.doLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+  if (!email || !pass) { showErr(errEl,'Preencha e-mail e senha.'); return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    const m = {'auth/invalid-credential':'E-mail ou senha incorretos.','auth/user-not-found':'Usuário não encontrado.','auth/wrong-password':'Senha incorreta.','auth/too-many-requests':'Muitas tentativas. Aguarde.'};
+    showErr(errEl, m[e.code] || 'Erro: '+e.message);
+  }
+};
+
+// ── REGISTER ───────────────────────────────────────────────────────────
+window.doRegister = async () => {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-pass').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+  if (!name)        { showErr(errEl,'Informe seu nome completo.'); return; }
+  if (!email)       { showErr(errEl,'Informe o e-mail.'); return; }
+  if (pass.length<6){ showErr(errEl,'Senha deve ter no mínimo 6 caracteres.'); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+    // Salva na coleção 'usuarios' para aparecer no painel admin
+    await addDoc(collection(db, 'usuarios'), {
+      uid: cred.user.uid,
+      nome: name,
+      email: email,
+      ativo: true,
+      criadoEm: serverTimestamp()
+    });
+    showToast('✓ Conta criada! Bem-vindo(a), ' + name + '.');
+  } catch(e) {
+    const m = {'auth/email-already-in-use':'E-mail já cadastrado.','auth/invalid-email':'E-mail inválido.','auth/weak-password':'Senha muito fraca.'};
+    showErr(errEl, m[e.code] || 'Erro: '+e.message);
+  }
+};
+
+window.doLogout = async () => { await signOut(auth); };
+window.switchAuthTab = (tab) => {
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('auth-error').style.display='none';
+  if (tab==='login') { document.getElementById('login-form').style.display='block'; document.getElementById('register-form').style.display='none'; document.querySelectorAll('.auth-tab')[0].classList.add('active'); }
+  else { document.getElementById('login-form').style.display='none'; document.getElementById('register-form').style.display='block'; document.querySelectorAll('.auth-tab')[1].classList.add('active'); }
+};
+
+// ── SALVAR REGISTRO ────────────────────────────────────────────────────
+window.salvarRegistro = async () => {
+  const placa   = document.getElementById('f-placa').value.trim().toUpperCase();
+  const cliente = document.getElementById('f-cliente').value.trim();
+  const nota    = document.getElementById('f-nota').value.trim();
+  const obs     = document.getElementById('f-obs').value.trim();
+  const embs    = getEmbalagens();
+  if (!placa)   { showToast('⚠ Informe a placa do caminhão.',true); return; }
+  if (!cliente) { showToast('⚠ Informe o nome do cliente.',true); return; }
+  if (!nota)    { showToast('⚠ Informe o número da nota fiscal.',true); return; }
+  if (!embs.length || embs.some(e=>!e.codigo||!e.qtd)) { showToast('⚠ Informe ao menos uma embalagem com código e quantidade.',true); return; }
+  const btn = document.getElementById('btn-salvar');
+  btn.textContent='Salvando...'; btn.disabled=true;
+  try {
+    await addDoc(collection(db,'registros'), {
+      dataHora: formatDt(new Date()),
+      timestamp: serverTimestamp(),
+      usuario: window._currentUser.displayName || window._currentUser.email,
+      uid: window._currentUser.uid,
+      placa, cliente, nota, embalagens: embs, obs,
+      fotos: window._fotos
+    });
+    showToast('✓ Registro salvo com sucesso!');
+    limparForm();
+    await loadRegistros();
+    switchTab('consulta');
+  } catch(e) {
+    console.error(e);
+    showToast('✕ Erro ao salvar: '+(e.code||e.message), true);
+  } finally { btn.textContent='✓ Salvar Registro'; btn.disabled=false; }
+};
+
+// ── LOAD & RENDER ──────────────────────────────────────────────────────
+async function loadRegistros() {
+  try {
+    const snap = await getDocs(query(collection(db,'registros'), orderBy('timestamp','desc')));
+    window._registros = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderTabela();
+  } catch(e) {
+    console.error('loadRegistros error:', e);
+    showToast('Erro ao carregar dados: '+(e.code||e.message), true);
+  }
+}
+window.loadRegistros = loadRegistros;
+
+window.renderTabela = () => {
+  const fc  = (document.getElementById('filter-cliente')?.value||'').toLowerCase();
+  const fk  = (document.getElementById('filter-cod')?.value||'').toLowerCase();
+  const fdi = document.getElementById('filter-data-ini')?.value;
+  const fdf = document.getElementById('filter-data-fim')?.value;
+  const data = window._registros.filter(r=>{
+    if (fc && !r.cliente?.toLowerCase().includes(fc)) return false;
+    if (fk && !r.embalagens?.some(e=>e.codigo?.toLowerCase().includes(fk))) return false;
+    if (fdi||fdf) {
+      const p = r.dataHora?.split(' ')[0]?.split('/');
+      if (p?.length===3) { const d=`${p[2]}-${p[1]}-${p[0]}`; if(fdi&&d<fdi)return false; if(fdf&&d>fdf)return false; }
+    }
+    return true;
+  });
+  document.getElementById('count-registros').textContent = data.length;
+  const tbody = document.getElementById('table-body');
+  const empty = document.getElementById('empty-state');
+  if (!data.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = data.map(r=>`
+    <tr>
+      <td style="white-space:nowrap;font-family:var(--font-mono);font-size:12px">${r.dataHora||'–'}</td>
+      <td>${esc(r.usuario||'–')}</td>
+      <td style="font-family:var(--font-mono);font-size:12px">${esc(r.placa||'–')}</td>
+      <td>${esc(r.cliente||'–')}</td>
+      <td style="font-family:var(--font-mono)">${esc(r.nota||'–')}</td>
+      <td>${(r.embalagens||[]).map(e=>`<span class="badge-emb">${esc(e.codigo)} × ${esc(String(e.qtd))}</span>`).join('')}</td>
+      <td>${r.fotos?.length?`<button class="tag-foto" onclick="openDetail('${r.id}')">📷 ${r.fotos.length} foto${r.fotos.length>1?'s':''}</button>`:'<span style="color:var(--text3);font-size:12px">–</span>'}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text2)">${esc(r.obs||'–')}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-secondary btn-sm btn-icon" style="margin-right:4px" onclick="openDetail('${r.id}')" title="Ver detalhes">👁</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="askDelete('${r.id}')" title="Excluir registro">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+};
+
+// ── DETAIL ─────────────────────────────────────────────────────────────
+window.openDetail = (id) => {
+  const r = window._registros.find(x=>x.id===id); if(!r) return;
+  document.getElementById('modal-detail-content').innerHTML = `
+    <div class="detail-item"><label>DATA / HORA</label><span>${r.dataHora||'–'}</span></div>
+    <div class="detail-item"><label>USUÁRIO</label><span>${esc(r.usuario||'–')}</span></div>
+    <div class="detail-item"><label>PLACA</label><span style="font-family:var(--font-mono)">${esc(r.placa||'–')}</span></div>
+    <div class="detail-item"><label>CLIENTE</label><span>${esc(r.cliente||'–')}</span></div>
+    <div class="detail-item"><label>NOTA FISCAL</label><span style="font-family:var(--font-mono)">${esc(r.nota||'–')}</span></div>
+    <div class="detail-item" style="grid-column:1/-1"><label>EMBALAGENS</label><div>${(r.embalagens||[]).map(e=>`<span class="badge-emb">${esc(e.codigo)} × ${esc(String(e.qtd))}</span>`).join(' ')}</div></div>
+    ${r.obs?`<div class="detail-item" style="grid-column:1/-1"><label>OBSERVAÇÕES</label><span>${esc(r.obs)}</span></div>`:''}
+  `;
+  const fs=document.getElementById('modal-foto-section');
+  const fg=document.getElementById('modal-fotos');
+  if (r.fotos?.length) { fs.style.display='block'; fg.innerHTML=r.fotos.map(f=>`<img src="${f}" onclick="openImgViewer('${f}')" alt="">`).join(''); }
+  else { fs.style.display='none'; }
+  document.getElementById('modal-detail').classList.add('open');
+};
+window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+
+// ── DELETE ─────────────────────────────────────────────────────────────
+window.askDelete = (id) => {
+  window._pendingDeleteId = id;
+  document.getElementById('delete-pass-input').value='';
+  document.getElementById('delete-error').style.display='none';
+  document.getElementById('modal-delete').classList.add('open');
+  setTimeout(()=>document.getElementById('delete-pass-input').focus(),100);
+};
+window.confirmDelete = async () => {
+  const pass  = document.getElementById('delete-pass-input').value;
+  const errEl = document.getElementById('delete-error');
+  errEl.style.display='none';
+  if (pass!==ADMIN_PASS) { showErr(errEl,'Senha de administrador incorreta.'); return; }
+  if (!window._pendingDeleteId) return;
+  try {
+    await deleteDoc(doc(db,'registros',window._pendingDeleteId));
+    window._registros = window._registros.filter(r=>r.id!==window._pendingDeleteId);
+    window._pendingDeleteId = null;
+    closeModal('modal-delete');
+    renderTabela();
+    showToast('✓ Registro excluído permanentemente.');
+  } catch(e) { showErr(errEl,'Erro ao excluir: '+(e.code||e.message)); }
+};
+
+// ── EMBALAGENS ─────────────────────────────────────────────────────────
+window.addEmbRow = () => {
+  const list=document.getElementById('emb-list'); if(!list) return;
+  const id='emb_'+Date.now();
+  const row=document.createElement('div'); row.className='emb-row'; row.id=id;
+  row.innerHTML=`
+    <div class="field" style="margin:0"><label>CÓDIGO DA EMBALAGEM *</label>
+      <input type="text" class="emb-cod" placeholder="Ex: EMB-001" oninput="this.value=this.value.toUpperCase()"></div>
+    <div class="field" style="margin:0"><label>QUANTIDADE *</label>
+      <input type="number" class="emb-qtd" placeholder="0" min="1"></div>
+    <button class="btn-rem-emb" onclick="removeEmb('${id}')">✕</button>`;
+  list.appendChild(row);
+};
+window.removeEmb = (id) => { const el=document.getElementById(id); if(el) el.remove(); };
+function getEmbalagens() {
+  return [...document.querySelectorAll('.emb-row')].map(r=>({
+    codigo: r.querySelector('.emb-cod')?.value.trim().toUpperCase()||'',
+    qtd:    r.querySelector('.emb-qtd')?.value.trim()||''
+  })).filter(e=>e.codigo||e.qtd);
+}
+
+// ── FOTOS ──────────────────────────────────────────────────────────────
+window.handleFotos = async (input) => {
+  for (const file of Array.from(input.files)) { window._fotos.push(await compressImg(file)); }
+  renderFotos(); input.value='';
+};
+function compressImg(file) {
+  return new Promise(res=>{
+    const img=new Image(); const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const MAX=1200; let w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;} if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h); URL.revokeObjectURL(url);
+      res(cv.toDataURL('image/jpeg',0.78));
+    }; img.src=url;
+  });
+}
+function renderFotos() {
+  document.getElementById('foto-preview').innerHTML=window._fotos.map((f,i)=>`
+    <div class="foto-thumb"><img src="${f}" onclick="openImgViewer('${f}')" alt="">
+    <button class="del-foto" onclick="removeFoto(${i})">✕</button></div>`).join('');
+}
+window.removeFoto=(i)=>{window._fotos.splice(i,1);renderFotos();};
+window.openImgViewer=(src)=>{document.getElementById('img-viewer-img').src=src;document.getElementById('img-viewer').classList.add('open');};
+window.closeImgViewer=()=>document.getElementById('img-viewer').classList.remove('open');
+
+// ── DATETIME ───────────────────────────────────────────────────────────
+function initDatetime(){updateDt();setInterval(updateDt,1000);}
+function updateDt(){const el=document.getElementById('f-datetime');if(el)el.value=formatDt(new Date());}
+function formatDt(d){return`${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;}
+function p2(n){return String(n).padStart(2,'0');}
+
+// ── LIMPAR ─────────────────────────────────────────────────────────────
+window.limparForm=()=>{
+  ['f-placa','f-cliente','f-nota','f-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('emb-list').innerHTML=''; window._fotos=[]; renderFotos(); addEmbRow();
+};
+window.limparFiltros=()=>{
+  ['filter-cliente','filter-cod','filter-data-ini','filter-data-fim'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderTabela();
+};
+
+// ── EXPORT ─────────────────────────────────────────────────────────────
+window.exportCSV=()=>{
+  const data=getFiltered(); if(!data.length){showToast('Nenhum dado para exportar.',true);return;}
+  const rows=[['Data/Hora','Usuário','Placa','Cliente','Nota Fiscal','Cód. Embalagem','Quantidade','Observações']];
+  data.forEach(r=>(r.embalagens?.length?r.embalagens:[{}]).forEach((e,i)=>rows.push([i===0?r.dataHora:'',i===0?(r.usuario||''):'',i===0?(r.placa||''):'',i===0?(r.cliente||''):'',i===0?(r.nota||''):'',e.codigo||'',e.qtd||'',i===0?(r.obs||''):''])));
+  dlFile('embalagens_'+ds()+'.csv','text/csv;charset=utf-8;','\uFEFF'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'));
+};
+window.exportXLSX=()=>{
+  const data=getFiltered(); if(!data.length){showToast('Nenhum dado para exportar.',true);return;}
+  const rows=[['Data/Hora','Usuário','Placa','Cliente','Nota Fiscal','Cód. Embalagem','Quantidade','Observações']];
+  data.forEach(r=>(r.embalagens?.length?r.embalagens:[{}]).forEach((e,i)=>rows.push([i===0?r.dataHora:'',i===0?(r.usuario||''):'',i===0?(r.placa||''):'',i===0?(r.cliente||''):'',i===0?(r.nota||''):'',e.codigo||'',e.qtd||'',i===0?(r.obs||''):''])));
+  const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[20,20,14,28,16,20,12,32].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Embalagens'); XLSX.writeFile(wb,'embalagens_'+ds()+'.xlsx');
+};
+function getFiltered(){
+  const fc=(document.getElementById('filter-cliente')?.value||'').toLowerCase();
+  const fk=(document.getElementById('filter-cod')?.value||'').toLowerCase();
+  return window._registros.filter(r=>{if(fc&&!r.cliente?.toLowerCase().includes(fc))return false;if(fk&&!r.embalagens?.some(e=>e.codigo?.toLowerCase().includes(fk)))return false;return true;});
+}
+function dlFile(name,type,content){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
+function ds(){const d=new Date();return`${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}`;}
+
+// ── ADMIN ──────────────────────────────────────────────────────────────
+window.checkAdminPass=()=>{
+  const v=document.getElementById('admin-pass-input').value;
+  const errEl=document.getElementById('admin-error');
+  if(v===ADMIN_PASS){
+    document.getElementById('admin-gate-wrap').style.display='none';
+    document.getElementById('admin-panel').style.display='block';
+    loadUsers();
+  } else { showErr(errEl,'Senha incorreta.'); }
+};
+window.lockAdmin=()=>{
+  document.getElementById('admin-gate-wrap').style.display='block';
+  document.getElementById('admin-panel').style.display='none';
+  document.getElementById('admin-pass-input').value='';
+  document.getElementById('admin-error').style.display='none';
+};
+async function loadUsers(){
+  const list=document.getElementById('users-list');
+  list.innerHTML=`<div class="empty-state"><div class="loader-ring" style="margin:0 auto"></div></div>`;
+  try {
+    const snap=await getDocs(collection(db,'usuarios'));
+    if(snap.empty){list.innerHTML=`<div class="empty-state"><div class="empty-icon">👥</div><p>Nenhum usuário cadastrado ainda.</p></div>`;return;}
+    list.innerHTML=snap.docs.map(d=>{
+      const u=d.data(); const ativo=u.ativo!==false;
+      return`<div class="user-row">
+        <div class="user-info">
+          <div class="uname">${esc(u.nome||'–')}</div>
+          <div class="uemail">${esc(u.email||'–')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span class="user-status ${ativo?'status-active':'status-blocked'}">${ativo?'Ativo':'Bloqueado'}</span>
+          ${ativo?`<button class="btn btn-danger btn-sm" onclick="toggleUser('${d.id}',false)">Bloquear</button>`:`<button class="btn btn-secondary btn-sm" onclick="toggleUser('${d.id}',true)">Ativar</button>`}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML=`<div class="empty-state"><p style="color:var(--warn)">Erro ao carregar: ${e.message}</p></div>`;
+  }
+}
+window.toggleUser=async(docId,ativo)=>{
+  try{await updateDoc(doc(db,'usuarios',docId),{ativo});showToast(ativo?'✓ Usuário ativado.':'✓ Usuário bloqueado.');loadUsers();}
+  catch(e){showToast('Erro: '+e.message,true);}
+};
+
+// ── NAV ────────────────────────────────────────────────────────────────
+window.switchTab=(tab)=>{
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  ['registro','consulta','admin'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('.nav-tab')[i].classList.add('active');});
+  if(tab==='consulta')loadRegistros();
+};
+
+// ── HELPERS ────────────────────────────────────────────────────────────
+window.showToast=(msg,error=false)=>{
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.className='toast show'+(error?' error':'');
+  clearTimeout(window._tt); window._tt=setTimeout(()=>{t.className='toast';},3500);
+};
+function showErr(el,msg){el.style.display='block';el.textContent=msg;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+['modal-detail','modal-delete'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
+document.getElementById('img-viewer')?.addEventListener('click',function(e){if(e.target===this)closeImgViewer();});
+</script>
+</body>
+</html>
