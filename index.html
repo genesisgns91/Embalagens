@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magius · Controle de Embalagens</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f14;--surface:#151820;--surface2:#1c2030;--border:#252a3a;
+  --accent:#00e5a0;--accent2:#0077ff;--warn:#ff6b35;--ok:#00e5a0;
+  --text:#e8eaf0;--text2:#7a8099;--text3:#4a5068;
+  --radius:10px;--font-mono:'Space Mono',monospace;--font-body:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;font-size:15px;}
+::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* LOADING */
+#loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;}
+.loader-ring{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* AUTH */
+#auth-screen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 36px;width:100%;max-width:440px;}
+.auth-logo{font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;}
+.auth-title{font-size:24px;font-weight:600;margin-bottom:6px;}
+.auth-sub{color:var(--text2);font-size:13px;margin-bottom:32px;}
+.auth-tabs{display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:4px;margin-bottom:28px;}
+.auth-tab{flex:1;padding:8px;background:none;border:none;color:var(--text2);font-family:var(--font-body);font-size:13px;cursor:pointer;border-radius:6px;transition:all .2s;}
+.auth-tab.active{background:var(--surface2);color:var(--text);font-weight:500;}
+.pass-wrap{position:relative;}
+.pass-wrap input{padding-right:42px;}
+.pass-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0;}
+.forgot-link{display:block;text-align:right;font-size:12px;color:var(--accent2);cursor:pointer;margin-top:6px;text-decoration:none;}
+.forgot-link:hover{text-decoration:underline;}
+
+/* FIELDS */
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500;letter-spacing:.5px;}
+.field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-family:var(--font-body);font-size:14px;transition:border-color .2s;outline:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent2);}
+.field textarea{resize:vertical;min-height:80px;}
+.field input[readonly]{color:var(--text2);cursor:default;}
+.field select option{background:var(--surface);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;}
+.btn-primary{background:var(--accent);color:#0d0f14;width:100%;padding:13px;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent2);}
+.btn-danger{background:rgba(255,107,53,.15);color:var(--warn);border:1px solid rgba(255,107,53,.3);}
+.btn-danger:hover{background:rgba(255,107,53,.25);}
+.btn-sm{padding:7px 14px;font-size:13px;}
+.btn-icon{padding:8px;border-radius:8px;}
+.error-msg{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.3);color:var(--warn);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
+.success-msg{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--accent);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
+
+/* APP SHELL */
+#app{display:none;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-brand{font-family:var(--font-mono);font-size:12px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.user-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text2);}
+.user-badge span{color:var(--text);font-weight:500;}
+.role-tag{font-size:10px;padding:2px 8px;border-radius:10px;font-family:var(--font-mono);}
+.role-visualizador{background:rgba(122,128,153,.15);color:var(--text2);}
+.role-operador{background:rgba(0,119,255,.15);color:#60a5fa;}
+.role-administrador{background:rgba(0,229,160,.15);color:var(--accent);}
+
+.nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 24px;gap:4px;overflow-x:auto;}
+.nav-tab{padding:14px 16px;background:none;border:none;color:var(--text2);font-family:var(--font-body);font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s;font-weight:500;white-space:nowrap;}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.nav-tab:hover:not(.active){color:var(--text);}
+.nav-tab:disabled{opacity:.3;cursor:not-allowed;}
+.page{display:none;padding:28px 24px;max-width:1100px;margin:0 auto;}
+.page.active{display:block;}
+
+/* PAGE HEADER */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap;}
+.page-title{font-size:22px;font-weight:600;}
+.page-sub{color:var(--text2);font-size:13px;margin-top:4px;}
+
+/* FORM CARDS */
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:24px;}
+.form-card-title{font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;}
+.form-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));}
+.form-grid .span2{grid-column:span 2;}
+.form-grid .full{grid-column:1/-1;}
+
+/* EMBALAGENS INPUT */
+.emb-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px;}
+.btn-add-emb{background:none;border:1px dashed var(--border);color:var(--text2);border-radius:var(--radius);padding:9px 16px;cursor:pointer;font-family:var(--font-body);font-size:13px;transition:all .2s;width:100%;margin-top:8px;}
+.btn-add-emb:hover{border-color:var(--accent);color:var(--accent);}
+.btn-rem-emb{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);color:var(--warn);border-radius:8px;padding:10px 12px;cursor:pointer;font-size:16px;transition:all .2s;}
+.btn-rem-emb:hover{background:rgba(255,107,53,.25);}
+
+/* FOTO */
+.foto-zone{border:1.5px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;}
+.foto-zone:hover{border-color:var(--accent2);}
+.foto-zone-icon{font-size:28px;margin-bottom:8px;}
+.foto-zone-text{color:var(--text2);font-size:13px;}
+.foto-preview{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;}
+.foto-thumb{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+.foto-thumb img{width:100%;height:100%;object-fit:cover;}
+.foto-thumb .del-foto{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:4px;width:18px;height:18px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;}
+
+/* TABLE */
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.filter-bar .field{margin:0;flex:1;min-width:160px;}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.table-wrap table{width:100%;border-collapse:collapse;font-size:13px;}
+.table-wrap th{background:var(--surface2);padding:11px 14px;text-align:left;color:var(--text2);font-weight:500;font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
+.table-wrap td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+.table-wrap tr:last-child td{border-bottom:none;}
+.table-wrap tr:hover td{background:rgba(255,255,255,.02);}
+.badge-emb{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-family:var(--font-mono);background:rgba(0,119,255,.15);color:#60a5fa;margin:2px 2px 2px 0;}
+.badge-cli{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;background:rgba(0,229,160,.1);color:var(--accent);}
+.tag-foto{display:inline-flex;align-items:center;gap:4px;background:rgba(0,229,160,.1);color:var(--accent);border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;border:none;font-family:var(--font-body);}
+.tag-foto:hover{background:rgba(0,229,160,.2);}
+.empty-state{padding:48px;text-align:center;color:var(--text3);}
+.empty-state .empty-icon{font-size:32px;margin-bottom:12px;}
+
+/* EXPORT BAR */
+.export-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+.export-bar .count{font-size:13px;color:var(--text2);}
+.export-bar .count span{color:var(--text);font-weight:600;}
+.export-btns{display:flex;gap:8px;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;position:relative;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px;}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{color:var(--text);}
+.foto-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+.foto-gallery img{width:100%;border-radius:8px;border:1px solid var(--border);cursor:pointer;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:20px;}
+.detail-item label{font-size:11px;color:var(--text2);display:block;margin-bottom:2px;}
+
+/* ADMIN */
+.admin-gate{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:400px;margin:0 auto;}
+.users-list{display:flex;flex-direction:column;gap:10px;}
+.user-row{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.user-info .uname{font-weight:500;font-size:14px;}
+.user-info .uemail{font-size:12px;color:var(--text2);margin-top:2px;}
+
+/* CATALOG CARDS */
+.catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.catalog-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .2s;}
+.catalog-card:hover{border-color:var(--border);}
+.catalog-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:8px;}
+.catalog-card-title{font-weight:600;font-size:15px;}
+.catalog-card-sub{font-size:12px;color:var(--text2);margin-top:3px;}
+.catalog-card-actions{display:flex;gap:6px;flex-shrink:0;}
+.catalog-card-fields{display:flex;flex-direction:column;gap:6px;}
+.cf-row{display:flex;justify-content:space-between;font-size:12px;}
+.cf-label{color:var(--text2);}
+.cf-val{color:var(--text);font-family:var(--font-mono);font-size:11px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:14px 18px;font-size:13px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;max-width:300px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error{border-left-color:var(--warn);}
+
+/* IMG VIEWER */
+#img-viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;align-items:center;justify-content:center;}
+#img-viewer.open{display:flex;}
+#img-viewer img{max-width:95vw;max-height:95vh;border-radius:8px;object-fit:contain;}
+#img-viewer-close{position:absolute;top:16px;right:16px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font-body);font-size:13px;}
+
+/* ACCESS DENIED */
+.access-denied{text-align:center;padding:60px 24px;color:var(--text3);}
+.access-denied .icon{font-size:40px;margin-bottom:16px;}
+.access-denied p{font-size:14px;color:var(--text2);}
+
+@media(max-width:600px){
+  .page{padding:20px 16px;}.topbar{padding:0 16px;}
+  .nav-tabs{padding:0 8px;}.nav-tab{padding:12px 10px;font-size:12px;}
+  .form-card{padding:20px 16px;}.detail-grid{grid-template-columns:1fr;}
+  .emb-row{grid-template-columns:1fr auto;}
+  .catalog-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="loader-ring"></div>
+  <div style="font-size:12px;color:var(--text2);font-family:var(--font-mono);letter-spacing:2px;">CARREGANDO...</div>
+</div>
+
+<!-- AUTH -->
+<div id="auth-screen" style="display:none;">
+  <div class="auth-card">
+    <div class="auth-logo">Magius</div>
+    <div class="auth-title">Controle de Embalagens</div>
+    <div class="auth-sub" id="auth-sub-text">Faça login para continuar</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Entrar</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Criar conta</button>
+      <button class="auth-tab" onclick="switchAuthTab('forgot')">Recuperar</button>
+    </div>
+    <div id="auth-error" class="error-msg"></div>
+    <div id="auth-success" class="success-msg"></div>
+
+    <!-- LOGIN -->
+    <div id="login-form">
+      <div class="field"><label>E-MAIL</label><input type="email" id="login-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="field"><label>SENHA</label>
+        <div class="pass-wrap"><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"><button class="pass-toggle" type="button" onclick="togglePass('login-pass',this)">👁</button></div>
+        <span class="forgot-link" onclick="switchAuthTab('forgot')">Esqueceu a senha?</span>
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register-form" style="display:none;">
+      <div class="field"><label>NOME COMPLETO</label><input type="text" id="reg-name" placeholder="Seu nome completo"></div>
+      <div class="field"><label>E-MAIL</label><input type="email" id="reg-email" placeholder="seu@email.com"></div>
+      <div class="field"><label>SENHA</label>
+        <div class="pass-wrap"><input type="password" id="reg-pass" placeholder="mínimo 6 caracteres"><button class="pass-toggle" type="button" onclick="togglePass('reg-pass',this)">👁</button></div>
+      </div>
+      <div class="field"><label>CONFIRMAR SENHA</label>
+        <div class="pass-wrap"><input type="password" id="reg-pass2" placeholder="repita a senha" onkeydown="if(event.key==='Enter')doRegister()"><button class="pass-toggle" type="button" onclick="togglePass('reg-pass2',this)">👁</button></div>
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()">Criar conta</button>
+    </div>
+
+    <!-- FORGOT -->
+    <div id="forgot-form" style="display:none;">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">Informe seu e-mail cadastrado e enviaremos um link para redefinir sua senha.</div>
+      <div class="field"><label>E-MAIL</label><input type="email" id="forgot-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doForgot()"></div>
+      <button class="btn btn-primary" onclick="doForgot()">Enviar link de recuperação</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">Magius · Embalagens</div>
+    <div class="topbar-right">
+      <div class="user-badge">Olá, <span id="topbar-name">–</span> <span id="topbar-role" class="role-tag"></span></div>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="nav-registro" onclick="switchTab('registro')">＋ Registro</button>
+    <button class="nav-tab" id="nav-consulta" onclick="switchTab('consulta')">🔍 Consulta</button>
+    <button class="nav-tab" id="nav-clientes" onclick="switchTab('clientes')">🏢 Clientes</button>
+    <button class="nav-tab" id="nav-embalagens-cat" onclick="switchTab('embalagens-cat')">📦 Embalagens</button>
+    <button class="nav-tab" id="nav-admin" onclick="switchTab('admin')">⚙ Administração</button>
+  </div>
+
+  <!-- REGISTRO -->
+  <div id="tab-registro" class="page active">
+    <div class="page-header">
+      <div><div class="page-title">Novo Registro de Entrada</div><div class="page-sub">Preencha os dados da carga recebida</div></div>
+    </div>
+    <div id="reg-no-access" class="access-denied" style="display:none;">
+      <div class="icon">🔒</div><p>Seu perfil não tem permissão para registrar entradas.</p>
+    </div>
+    <div id="reg-form-wrap">
+      <div class="form-card">
+        <div class="form-card-title">🚛 Dados do Transporte</div>
+        <div class="form-grid">
+          <div class="field"><label>DATA / HORA <span style="color:var(--accent);font-size:10px">AUTO</span></label><input type="text" id="f-datetime" readonly></div>
+          <div class="field"><label>USUÁRIO <span style="color:var(--accent);font-size:10px">AUTO</span></label><input type="text" id="f-user" readonly></div>
+          <div class="field"><label>PLACA DO CAMINHÃO *</label><input type="text" id="f-placa" placeholder="ABC-1234" oninput="this.value=this.value.toUpperCase()"></div>
+          <div class="field"><label>CLIENTE *</label>
+            <select id="f-cliente" onchange="onClienteChange()">
+              <option value="">— Selecione o cliente —</option>
+            </select>
+          </div>
+          <div class="field"><label>NÚMERO DA NOTA FISCAL *</label><input type="text" id="f-nota" placeholder="000000"></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="form-card-title">📦 Embalagens Recebidas</div>
+        <div id="emb-list"></div>
+        <button class="btn-add-emb" onclick="addEmbRow()">+ Adicionar embalagem</button>
+      </div>
+      <div class="form-card">
+        <div class="form-card-title">📷 Fotos da Carga</div>
+        <div class="foto-zone" onclick="document.getElementById('foto-input').click()">
+          <input type="file" id="foto-input" accept="image/*" multiple capture="environment" onchange="handleFotos(this)" style="display:none">
+          <div class="foto-zone-icon">📷</div>
+          <div class="foto-zone-text">Toque para fotografar ou selecionar da galeria<br><small style="color:var(--text3)">Aceita múltiplas fotos</small></div>
+        </div>
+        <div class="foto-preview" id="foto-preview"></div>
+      </div>
+      <div class="form-card">
+        <div class="form-card-title">📝 Observações</div>
+        <textarea id="f-obs" placeholder="Observações adicionais (opcional)…" rows="3" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-family:var(--font-body);font-size:14px;outline:none;resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" style="flex:1;min-width:160px" id="btn-salvar" onclick="salvarRegistro()">✓ Salvar Registro</button>
+        <button class="btn btn-secondary" onclick="limparForm()">↺ Limpar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONSULTA -->
+  <div id="tab-consulta" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Consulta de Registros</div><div class="page-sub">Histórico de entradas de embalagens</div></div>
+    </div>
+    <div class="filter-bar">
+      <div class="field"><label>FILTRAR POR CLIENTE</label><input type="text" id="filter-cliente" placeholder="Nome do cliente..." oninput="renderTabela()"></div>
+      <div class="field"><label>FILTRAR POR CÓD. EMBALAGEM</label><input type="text" id="filter-cod" placeholder="Código..." oninput="renderTabela()"></div>
+      <div class="field"><label>DATA INICIAL</label><input type="date" id="filter-data-ini" oninput="renderTabela()"></div>
+      <div class="field"><label>DATA FINAL</label><input type="date" id="filter-data-fim" oninput="renderTabela()"></div>
+      <div style="display:flex;align-items:flex-end;"><button class="btn btn-secondary btn-sm" onclick="limparFiltros()">✕ Limpar</button></div>
+    </div>
+    <div class="export-bar">
+      <div class="count">Exibindo <span id="count-registros">0</span> registros</div>
+      <div class="export-btns">
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportXLSX()">⬇ Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th>Data / Hora</th><th>Usuário</th><th>Placa</th><th>Cliente</th>
+            <th>Nota Fiscal</th><th>Embalagens</th><th>Fotos</th><th>Obs.</th><th>Ações</th>
+          </tr></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div id="empty-state" class="empty-state" style="display:none;">
+        <div class="empty-icon">📭</div><p>Nenhum registro encontrado</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLIENTES -->
+  <div id="tab-clientes" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Cadastro de Clientes</div><div class="page-sub">Gerencie os clientes cadastrados</div></div>
+      <button class="btn btn-secondary" id="btn-novo-cliente" onclick="openModalCliente()">+ Novo Cliente</button>
+    </div>
+    <div id="clientes-no-access" class="access-denied" style="display:none;">
+      <div class="icon">🔒</div><p>Seu perfil não tem permissão para gerenciar clientes.</p>
+    </div>
+    <div id="clientes-wrap">
+      <div class="filter-bar">
+        <div class="field"><label>BUSCAR CLIENTE</label><input type="text" id="filter-cli-nome" placeholder="Nome do cliente..." oninput="renderClientes()"></div>
+      </div>
+      <div class="catalog-grid" id="clientes-grid"></div>
+      <div id="clientes-empty" class="empty-state" style="display:none;"><div class="empty-icon">🏢</div><p>Nenhum cliente cadastrado</p></div>
+    </div>
+  </div>
+
+  <!-- EMBALAGENS CATÁLOGO -->
+  <div id="tab-embalagens-cat" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Catálogo de Embalagens</div><div class="page-sub">Embalagens cadastradas por cliente</div></div>
+      <button class="btn btn-secondary" id="btn-nova-emb-cat" onclick="openModalEmbCat()">+ Nova Embalagem</button>
+    </div>
+    <div id="embcat-no-access" class="access-denied" style="display:none;">
+      <div class="icon">🔒</div><p>Seu perfil não tem permissão para gerenciar embalagens.</p>
+    </div>
+    <div id="embcat-wrap">
+      <div class="filter-bar">
+        <div class="field"><label>FILTRAR POR CLIENTE</label>
+          <select id="filter-embcat-cli" onchange="renderEmbCat()">
+            <option value="">Todos os clientes</option>
+          </select>
+        </div>
+        <div class="field"><label>BUSCAR CÓDIGO / NOME</label><input type="text" id="filter-embcat-cod" placeholder="Código ou nome..." oninput="renderEmbCat()"></div>
+      </div>
+      <div class="catalog-grid" id="embcat-grid"></div>
+      <div id="embcat-empty" class="empty-state" style="display:none;"><div class="empty-icon">📦</div><p>Nenhuma embalagem cadastrada</p></div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="tab-admin" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Administração</div><div class="page-sub">Gerenciamento de usuários e permissões</div></div>
+    </div>
+    <div id="admin-gate-wrap">
+      <div class="admin-gate">
+        <div style="font-size:28px;margin-bottom:12px;">🔐</div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:6px;">Área restrita</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:24px;">Insira a senha de administrador.</div>
+        <div id="admin-error" class="error-msg"></div>
+        <div class="field"><label>SENHA</label>
+          <div class="pass-wrap"><input type="password" id="admin-pass-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPass()"><button class="pass-toggle" type="button" onclick="togglePass('admin-pass-input',this)">👁</button></div>
+        </div>
+        <button class="btn btn-primary" onclick="checkAdminPass()">Acessar</button>
+      </div>
+    </div>
+    <div id="admin-panel" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+        <div style="font-size:14px;color:var(--text2);">Usuários cadastrados</div>
+        <button class="btn btn-danger btn-sm" onclick="lockAdmin()">🔒 Bloquear painel</button>
+      </div>
+      <div id="users-list" class="users-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALHES REGISTRO -->
+<div id="modal-detail" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
+    <div class="modal-title">Detalhes do Registro</div>
+    <div class="detail-grid" id="modal-detail-content"></div>
+    <div id="modal-foto-section" style="display:none;">
+      <div style="font-size:11px;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;">Fotos</div>
+      <div class="foto-gallery" id="modal-fotos"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR -->
+<div id="modal-delete" class="modal-overlay">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-delete')">✕</button>
+    <div class="modal-title" style="color:var(--warn);">🗑 Excluir Registro</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.6;">Ação <strong style="color:var(--warn)">irreversível</strong>. Confirme com a senha de administrador:</div>
+    <div id="delete-error" class="error-msg"></div>
+    <div class="field"><label>SENHA DE ADMINISTRADOR</label>
+      <div class="pass-wrap"><input type="password" id="delete-pass-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')confirmDelete()"><button class="pass-toggle" type="button" onclick="togglePass('delete-pass-input',this)">👁</button></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-danger" style="flex:1" onclick="confirmDelete()">Confirmar Exclusão</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CLIENTE -->
+<div id="modal-cliente" class="modal-overlay">
+  <div class="modal" style="max-width:480px;">
+    <button class="modal-close" onclick="closeModal('modal-cliente')">✕</button>
+    <div class="modal-title" id="modal-cliente-title">Novo Cliente</div>
+    <div id="modal-cliente-error" class="error-msg"></div>
+    <div class="form-grid">
+      <div class="field full"><label>NOME DO CLIENTE *</label><input type="text" id="cli-nome" placeholder="Razão social / nome"></div>
+      <div class="field"><label>D+X (dias) *</label><input type="number" id="cli-dx" placeholder="Ex: 3" min="0"></div>
+    </div>
+    <input type="hidden" id="cli-edit-id">
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-primary" style="flex:1" onclick="salvarCliente()">Salvar Cliente</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-cliente')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR CLIENTE -->
+<div id="modal-delete-cli" class="modal-overlay">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-delete-cli')">✕</button>
+    <div class="modal-title" style="color:var(--warn);">🗑 Excluir Cliente</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.6;">Isso também excluirá todas as embalagens vinculadas a este cliente. Confirme com a senha de administrador:</div>
+    <div id="delete-cli-error" class="error-msg"></div>
+    <div class="field"><label>SENHA DE ADMINISTRADOR</label>
+      <div class="pass-wrap"><input type="password" id="delete-cli-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')confirmDeleteCli()"><button class="pass-toggle" type="button" onclick="togglePass('delete-cli-pass',this)">👁</button></div>
+    </div>
+    <input type="hidden" id="delete-cli-id">
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-danger" style="flex:1" onclick="confirmDeleteCli()">Confirmar</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete-cli')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EMBALAGEM CATÁLOGO -->
+<div id="modal-emb-cat" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-emb-cat')">✕</button>
+    <div class="modal-title" id="modal-emb-cat-title">Nova Embalagem</div>
+    <div id="modal-emb-cat-error" class="error-msg"></div>
+    <div class="form-grid">
+      <div class="field full"><label>CLIENTE *</label>
+        <select id="emb-cat-cli">
+          <option value="">— Selecione o cliente —</option>
+        </select>
+      </div>
+      <div class="field"><label>CÓDIGO DA EMBALAGEM *</label><input type="text" id="emb-cat-cod" placeholder="Ex: EMB-001" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="field"><label>DESCRIÇÃO *</label><input type="text" id="emb-cat-desc" placeholder="Descrição da embalagem"></div>
+      <div class="field"><label>NOME INTERNO</label><input type="text" id="emb-cat-nome-int" placeholder="Nome interno"></div>
+      <div class="field"><label>CÓD. DATASUL</label><input type="number" id="emb-cat-datasul" placeholder="000000"></div>
+      <div class="field"><label>QTD. POR FARDO</label><input type="number" id="emb-cat-fardo" placeholder="0" min="0"></div>
+      <div class="field full"><label>ITENS DA EMBALAGEM</label><textarea id="emb-cat-itens" placeholder="Descreva os itens contidos na embalagem…" rows="3"></textarea></div>
+    </div>
+    <input type="hidden" id="emb-cat-edit-id">
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-primary" style="flex:1" onclick="salvarEmbCat()">Salvar Embalagem</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-emb-cat')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR EMB CAT -->
+<div id="modal-delete-emb" class="modal-overlay">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-delete-emb')">✕</button>
+    <div class="modal-title" style="color:var(--warn);">🗑 Excluir Embalagem</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.6;">Confirme com a senha de administrador:</div>
+    <div id="delete-emb-error" class="error-msg"></div>
+    <div class="field"><label>SENHA DE ADMINISTRADOR</label>
+      <div class="pass-wrap"><input type="password" id="delete-emb-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')confirmDeleteEmb()"><button class="pass-toggle" type="button" onclick="togglePass('delete-emb-pass',this)">👁</button></div>
+    </div>
+    <input type="hidden" id="delete-emb-id">
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-danger" style="flex:1" onclick="confirmDeleteEmb()">Confirmar</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete-emb')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMG VIEWER -->
+<div id="img-viewer">
+  <button id="img-viewer-close" onclick="closeImgViewer()">✕ Fechar</button>
+  <img id="img-viewer-img" src="" alt="">
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAmX8gVADeGgS9SFBdN18Y1MmVwzIlC2tE",
+  authDomain: "embalagens-19e30.firebaseapp.com",
+  projectId: "embalagens-19e30",
+  storageBucket: "embalagens-19e30.firebasestorage.app",
+  messagingSenderId: "202746410182",
+  appId: "1:202746410182:web:5275f53f8fe0db3a2b93c7",
+  measurementId: "G-B7DBN6DGGT"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
+const ADMIN_PASS = 'Log#001';
+
+// ROLES: visualizador | operador | administrador
+const ROLE_LABELS = { visualizador:'Visualizador', operador:'Operador', administrador:'Administrador' };
+
+window._registros   = [];
+window._clientes    = [];
+window._embCat      = [];
+window._fotos       = [];
+window._currentUser = null;
+window._userRole    = 'visualizador';
+window._pendingDeleteId = null;
+
+// ── AUTH STATE ────────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+  document.getElementById('loading-screen').style.display = 'none';
+  if (user) {
+    window._currentUser = user;
+    // Load user role from Firestore
+    try {
+      const snap = await getDocs(query(collection(db,'usuarios'), where('uid','==',user.uid)));
+      if (!snap.empty) {
+        const ud = snap.docs[0].data();
+        window._userRole = ud.perfil || 'operador';
+        if (ud.ativo === false) { await signOut(auth); showAuthErr('Sua conta está bloqueada. Contate o administrador.'); return; }
+      } else {
+        window._userRole = 'operador';
+      }
+    } catch(e) { window._userRole = 'operador'; }
+
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('topbar-name').textContent = user.displayName || user.email;
+    const roleEl = document.getElementById('topbar-role');
+    roleEl.textContent = ROLE_LABELS[window._userRole] || window._userRole;
+    roleEl.className = `role-tag role-${window._userRole}`;
+    document.getElementById('f-user').value = user.displayName || user.email;
+    applyRoleUI();
+    initDatetime();
+    addEmbRow();
+    await Promise.all([loadClientes(), loadEmbCat(), loadRegistros()]);
+  } else {
+    window._currentUser = null;
+    window._registros = []; window._clientes = []; window._embCat = [];
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+});
+
+function applyRoleUI() {
+  const r = window._userRole;
+  const canWrite = r === 'operador' || r === 'administrador';
+  const canAdmin = r === 'administrador';
+
+  // Registro tab
+  document.getElementById('reg-no-access').style.display = canWrite ? 'none' : 'block';
+  document.getElementById('reg-form-wrap').style.display = canWrite ? 'block' : 'none';
+
+  // Clientes tab
+  document.getElementById('btn-novo-cliente').style.display = canWrite ? 'inline-flex' : 'none';
+
+  // EmbCat tab
+  document.getElementById('btn-nova-emb-cat').style.display = canWrite ? 'inline-flex' : 'none';
+}
+
+// ── AUTH FUNCTIONS ─────────────────────────────────────
+window.doLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  clearAuthMsgs();
+  if (!email || !pass) { showAuthErr('Preencha e-mail e senha.'); return; }
+  try { await signInWithEmailAndPassword(auth, email, pass); }
+  catch(e) {
+    const m={'auth/invalid-credential':'E-mail ou senha incorretos.','auth/user-not-found':'Usuário não encontrado.','auth/wrong-password':'Senha incorreta.','auth/too-many-requests':'Muitas tentativas. Aguarde.'};
+    showAuthErr(m[e.code]||'Erro: '+e.message);
+  }
+};
+
+window.doRegister = async () => {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  clearAuthMsgs();
+  if (!name)        { showAuthErr('Informe seu nome completo.'); return; }
+  if (!email)       { showAuthErr('Informe o e-mail.'); return; }
+  if (pass.length<6){ showAuthErr('Senha deve ter no mínimo 6 caracteres.'); return; }
+  if (pass !== pass2){ showAuthErr('As senhas não coincidem.'); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+    await addDoc(collection(db,'usuarios'), { uid:cred.user.uid, nome:name, email:email, ativo:true, perfil:'operador', criadoEm:serverTimestamp() });
+    showToast('✓ Conta criada! Bem-vindo(a), '+name+'.');
+  } catch(e) {
+    const m={'auth/email-already-in-use':'E-mail já cadastrado.','auth/invalid-email':'E-mail inválido.','auth/weak-password':'Senha muito fraca.'};
+    showAuthErr(m[e.code]||'Erro: '+e.message);
+  }
+};
+
+window.doForgot = async () => {
+  const email = document.getElementById('forgot-email').value.trim();
+  clearAuthMsgs();
+  if (!email) { showAuthErr('Informe o e-mail cadastrado.'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    document.getElementById('auth-success').style.display = 'block';
+    document.getElementById('auth-success').textContent = '✓ Link de recuperação enviado para '+email+'. Verifique sua caixa de entrada.';
+  } catch(e) {
+    const m={'auth/user-not-found':'E-mail não encontrado.','auth/invalid-email':'E-mail inválido.'};
+    showAuthErr(m[e.code]||'Erro: '+e.message);
+  }
+};
+
+window.doLogout = async () => { await signOut(auth); };
+
+window.switchAuthTab = (tab) => {
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  clearAuthMsgs();
+  ['login-form','register-form','forgot-form'].forEach(id=>document.getElementById(id).style.display='none');
+  const tabs = ['login','register','forgot'];
+  document.getElementById(tab+'-form').style.display = 'block';
+  document.querySelectorAll('.auth-tab')[tabs.indexOf(tab)].classList.add('active');
+  const subs = {login:'Faça login para continuar',register:'Crie sua conta',forgot:'Recuperar senha'};
+  document.getElementById('auth-sub-text').textContent = subs[tab];
+};
+
+window.togglePass = (inputId, btn) => {
+  const el = document.getElementById(inputId);
+  if (el.type==='password') { el.type='text'; btn.textContent='🙈'; }
+  else { el.type='password'; btn.textContent='👁'; }
+};
+
+function clearAuthMsgs() { document.getElementById('auth-error').style.display='none'; document.getElementById('auth-success').style.display='none'; }
+function showAuthErr(msg) { const e=document.getElementById('auth-error'); e.style.display='block'; e.textContent=msg; }
+
+// ── CLIENTES ───────────────────────────────────────────
+async function loadClientes() {
+  try {
+    const snap = await getDocs(query(collection(db,'clientes'),orderBy('nome')));
+    window._clientes = snap.docs.map(d=>({id:d.id,...d.data()}));
+    populateClienteSelects();
+    renderClientes();
+  } catch(e) { console.error('loadClientes:',e); }
+}
+window.loadClientes = loadClientes;
+
+function populateClienteSelects() {
+  const opts = window._clientes.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+  document.getElementById('f-cliente').innerHTML = '<option value="">— Selecione o cliente —</option>' + opts;
+  document.getElementById('emb-cat-cli').innerHTML = '<option value="">— Selecione o cliente —</option>' + opts;
+  const filterSel = document.getElementById('filter-embcat-cli');
+  filterSel.innerHTML = '<option value="">Todos os clientes</option>' + opts;
+}
+
+window.renderClientes = () => {
+  const f = (document.getElementById('filter-cli-nome')?.value||'').toLowerCase();
+  const data = window._clientes.filter(c=>!f||c.nome?.toLowerCase().includes(f));
+  const grid = document.getElementById('clientes-grid');
+  const empty = document.getElementById('clientes-empty');
+  if (!data.length) { grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  const canWrite = ['operador','administrador'].includes(window._userRole);
+  const canDel   = window._userRole === 'administrador';
+  grid.innerHTML = data.map(c=>`
+    <div class="catalog-card">
+      <div class="catalog-card-header">
+        <div><div class="catalog-card-title">${esc(c.nome)}</div><div class="catalog-card-sub">D+${c.dx||0} dias</div></div>
+        <div class="catalog-card-actions">
+          ${canWrite?`<button class="btn btn-secondary btn-sm btn-icon" onclick="openModalCliente('${c.id}')" title="Editar">✏️</button>`:''}
+          ${canDel?`<button class="btn btn-danger btn-sm btn-icon" onclick="askDeleteCli('${c.id}')" title="Excluir">🗑</button>`:''}
+        </div>
+      </div>
+      <div class="catalog-card-fields">
+        <div class="cf-row"><span class="cf-label">Embalagens cadastradas</span><span class="cf-val">${window._embCat.filter(e=>e.clienteId===c.id).length}</span></div>
+      </div>
+    </div>`).join('');
+};
+
+window.openModalCliente = (id) => {
+  document.getElementById('modal-cliente-error').style.display='none';
+  if (id) {
+    const c = window._clientes.find(x=>x.id===id);
+    document.getElementById('modal-cliente-title').textContent='Editar Cliente';
+    document.getElementById('cli-nome').value = c.nome||'';
+    document.getElementById('cli-dx').value   = c.dx||'';
+    document.getElementById('cli-edit-id').value = id;
+  } else {
+    document.getElementById('modal-cliente-title').textContent='Novo Cliente';
+    document.getElementById('cli-nome').value=''; document.getElementById('cli-dx').value='';
+    document.getElementById('cli-edit-id').value='';
+  }
+  document.getElementById('modal-cliente').classList.add('open');
+};
+
+window.salvarCliente = async () => {
+  const nome = document.getElementById('cli-nome').value.trim();
+  const dx   = document.getElementById('cli-dx').value.trim();
+  const errEl= document.getElementById('modal-cliente-error');
+  errEl.style.display='none';
+  if (!nome)       { showErr(errEl,'Informe o nome do cliente.'); return; }
+  if (dx===''||isNaN(Number(dx))){ showErr(errEl,'Informe o valor D+X.'); return; }
+  const editId = document.getElementById('cli-edit-id').value;
+  try {
+    if (editId) {
+      await updateDoc(doc(db,'clientes',editId),{nome,dx:Number(dx)});
+      const idx = window._clientes.findIndex(c=>c.id===editId);
+      if(idx>-1) window._clientes[idx]={...window._clientes[idx],nome,dx:Number(dx)};
+      showToast('✓ Cliente atualizado.');
+    } else {
+      const ref = await addDoc(collection(db,'clientes'),{nome,dx:Number(dx),criadoEm:serverTimestamp()});
+      window._clientes.push({id:ref.id,nome,dx:Number(dx)});
+      window._clientes.sort((a,b)=>a.nome.localeCompare(b.nome));
+      showToast('✓ Cliente cadastrado.');
+    }
+    closeModal('modal-cliente');
+    populateClienteSelects();
+    renderClientes();
+  } catch(e){ showErr(errEl,'Erro: '+e.message); }
+};
+
+window.askDeleteCli = (id) => {
+  document.getElementById('delete-cli-id').value=id;
+  document.getElementById('delete-cli-pass').value='';
+  document.getElementById('delete-cli-error').style.display='none';
+  document.getElementById('modal-delete-cli').classList.add('open');
+};
+window.confirmDeleteCli = async () => {
+  const pass  = document.getElementById('delete-cli-pass').value;
+  const errEl = document.getElementById('delete-cli-error');
+  const id    = document.getElementById('delete-cli-id').value;
+  errEl.style.display='none';
+  if(pass!==ADMIN_PASS){showErr(errEl,'Senha incorreta.');return;}
+  try {
+    await deleteDoc(doc(db,'clientes',id));
+    // also delete linked embalagens
+    const linked = window._embCat.filter(e=>e.clienteId===id);
+    await Promise.all(linked.map(e=>deleteDoc(doc(db,'embalagensCat',e.id))));
+    window._clientes = window._clientes.filter(c=>c.id!==id);
+    window._embCat   = window._embCat.filter(e=>e.clienteId!==id);
+    closeModal('modal-delete-cli');
+    populateClienteSelects();
+    renderClientes(); renderEmbCat();
+    showToast('✓ Cliente excluído.');
+  } catch(e){showErr(errEl,'Erro: '+e.message);}
+};
+
+// ── EMBALAGENS CATÁLOGO ────────────────────────────────
+async function loadEmbCat() {
+  try {
+    const snap = await getDocs(query(collection(db,'embalagensCat'),orderBy('codigo')));
+    window._embCat = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderEmbCat();
+  } catch(e){ console.error('loadEmbCat:',e); }
+}
+window.loadEmbCat = loadEmbCat;
+
+window.renderEmbCat = () => {
+  const fc  = document.getElementById('filter-embcat-cli')?.value||'';
+  const fk  = (document.getElementById('filter-embcat-cod')?.value||'').toLowerCase();
+  const data = window._embCat.filter(e=>{
+    if(fc && e.clienteId!==fc) return false;
+    if(fk && !e.codigo?.toLowerCase().includes(fk) && !e.nomeInterno?.toLowerCase().includes(fk) && !e.descricao?.toLowerCase().includes(fk)) return false;
+    return true;
+  });
+  const grid  = document.getElementById('embcat-grid');
+  const empty = document.getElementById('embcat-empty');
+  if(!data.length){grid.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const canWrite = ['operador','administrador'].includes(window._userRole);
+  const canDel   = window._userRole==='administrador';
+  grid.innerHTML = data.map(e=>{
+    const cli = window._clientes.find(c=>c.id===e.clienteId);
+    return `<div class="catalog-card">
+      <div class="catalog-card-header">
+        <div>
+          <div class="catalog-card-title" style="font-family:var(--font-mono);font-size:14px">${esc(e.codigo)}</div>
+          <div class="catalog-card-sub">${esc(e.descricao||'–')}</div>
+        </div>
+        <div class="catalog-card-actions">
+          ${canWrite?`<button class="btn btn-secondary btn-sm btn-icon" onclick="openModalEmbCat('${e.id}')" title="Editar">✏️</button>`:''}
+          ${canDel?`<button class="btn btn-danger btn-sm btn-icon" onclick="askDeleteEmb('${e.id}')" title="Excluir">🗑</button>`:''}
+        </div>
+      </div>
+      <div class="catalog-card-fields">
+        <div class="cf-row"><span class="cf-label">Cliente</span><span class="cf-val" style="color:var(--accent)">${esc(cli?.nome||'–')}</span></div>
+        ${e.nomeInterno?`<div class="cf-row"><span class="cf-label">Nome interno</span><span class="cf-val">${esc(e.nomeInterno)}</span></div>`:''}
+        ${e.codDatasul?`<div class="cf-row"><span class="cf-label">Cód. Datasul</span><span class="cf-val">${esc(String(e.codDatasul))}</span></div>`:''}
+        ${e.qtdFardo?`<div class="cf-row"><span class="cf-label">Qtd/Fardo</span><span class="cf-val">${esc(String(e.qtdFardo))}</span></div>`:''}
+        ${e.itens?`<div style="margin-top:8px;font-size:12px;color:var(--text2);line-height:1.5">${esc(e.itens)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.openModalEmbCat = (id) => {
+  document.getElementById('modal-emb-cat-error').style.display='none';
+  populateClienteSelects();
+  if(id){
+    const e=window._embCat.find(x=>x.id===id);
+    document.getElementById('modal-emb-cat-title').textContent='Editar Embalagem';
+    document.getElementById('emb-cat-cli').value      = e.clienteId||'';
+    document.getElementById('emb-cat-cod').value      = e.codigo||'';
+    document.getElementById('emb-cat-desc').value     = e.descricao||'';
+    document.getElementById('emb-cat-nome-int').value = e.nomeInterno||'';
+    document.getElementById('emb-cat-datasul').value  = e.codDatasul||'';
+    document.getElementById('emb-cat-fardo').value    = e.qtdFardo||'';
+    document.getElementById('emb-cat-itens').value    = e.itens||'';
+    document.getElementById('emb-cat-edit-id').value  = id;
+  } else {
+    document.getElementById('modal-emb-cat-title').textContent='Nova Embalagem';
+    ['emb-cat-cli','emb-cat-cod','emb-cat-desc','emb-cat-nome-int','emb-cat-datasul','emb-cat-fardo','emb-cat-itens'].forEach(id=>{document.getElementById(id).value='';});
+    document.getElementById('emb-cat-edit-id').value='';
+  }
+  document.getElementById('modal-emb-cat').classList.add('open');
+};
+
+window.salvarEmbCat = async () => {
+  const cliId   = document.getElementById('emb-cat-cli').value;
+  const codigo  = document.getElementById('emb-cat-cod').value.trim().toUpperCase();
+  const desc    = document.getElementById('emb-cat-desc').value.trim();
+  const errEl   = document.getElementById('modal-emb-cat-error');
+  errEl.style.display='none';
+  if(!cliId)  {showErr(errEl,'Selecione o cliente.');return;}
+  if(!codigo) {showErr(errEl,'Informe o código da embalagem.');return;}
+  if(!desc)   {showErr(errEl,'Informe a descrição.');return;}
+  const data = { clienteId:cliId, codigo, descricao:desc,
+    nomeInterno: document.getElementById('emb-cat-nome-int').value.trim(),
+    codDatasul:  Number(document.getElementById('emb-cat-datasul').value)||null,
+    qtdFardo:    Number(document.getElementById('emb-cat-fardo').value)||null,
+    itens:       document.getElementById('emb-cat-itens').value.trim() };
+  const editId = document.getElementById('emb-cat-edit-id').value;
+  try {
+    if(editId){
+      await updateDoc(doc(db,'embalagensCat',editId),data);
+      const idx=window._embCat.findIndex(e=>e.id===editId);
+      if(idx>-1) window._embCat[idx]={...window._embCat[idx],...data};
+      showToast('✓ Embalagem atualizada.');
+    } else {
+      const ref=await addDoc(collection(db,'embalagensCat'),{...data,criadoEm:serverTimestamp()});
+      window._embCat.push({id:ref.id,...data});
+      window._embCat.sort((a,b)=>a.codigo.localeCompare(b.codigo));
+      showToast('✓ Embalagem cadastrada.');
+    }
+    closeModal('modal-emb-cat');
+    renderEmbCat();
+  } catch(e){showErr(errEl,'Erro: '+e.message);}
+};
+
+window.askDeleteEmb=(id)=>{
+  document.getElementById('delete-emb-id').value=id;
+  document.getElementById('delete-emb-pass').value='';
+  document.getElementById('delete-emb-error').style.display='none';
+  document.getElementById('modal-delete-emb').classList.add('open');
+};
+window.confirmDeleteEmb=async()=>{
+  const pass=document.getElementById('delete-emb-pass').value;
+  const errEl=document.getElementById('delete-emb-error');
+  const id=document.getElementById('delete-emb-id').value;
+  errEl.style.display='none';
+  if(pass!==ADMIN_PASS){showErr(errEl,'Senha incorreta.');return;}
+  try{
+    await deleteDoc(doc(db,'embalagensCat',id));
+    window._embCat=window._embCat.filter(e=>e.id!==id);
+    closeModal('modal-delete-emb'); renderEmbCat();
+    showToast('✓ Embalagem excluída.');
+  }catch(e){showErr(errEl,'Erro: '+e.message);}
+};
+
+// ── REGISTRO: cliente → filtra embalagens ──────────────
+window.onClienteChange = () => {
+  const cliId = document.getElementById('f-cliente').value;
+  document.getElementById('emb-list').innerHTML='';
+  addEmbRow(cliId);
+};
+
+window.addEmbRow = (cliId) => {
+  if(!cliId) cliId = document.getElementById('f-cliente')?.value||'';
+  const list=document.getElementById('emb-list'); if(!list) return;
+  const id='emb_'+Date.now();
+  const embs = cliId ? window._embCat.filter(e=>e.clienteId===cliId) : [];
+  const selectHtml = embs.length
+    ? `<select class="emb-sel" onchange="onEmbSelect(this,'${id}')">
+        <option value="">— Selecione —</option>
+        ${embs.map(e=>`<option value="${e.id}" data-cod="${esc(e.codigo)}">${esc(e.codigo)} – ${esc(e.descricao)}</option>`).join('')}
+       </select>`
+    : `<input type="text" class="emb-cod" placeholder="Código da embalagem" oninput="this.value=this.value.toUpperCase()">`;
+  const row=document.createElement('div'); row.className='emb-row'; row.id=id;
+  row.innerHTML=`
+    <div class="field" style="margin:0"><label>EMBALAGEM *</label>${selectHtml}</div>
+    <div class="field" style="margin:0"><label>QUANTIDADE *</label><input type="number" class="emb-qtd" placeholder="0" min="1"></div>
+    <button class="btn-rem-emb" onclick="removeEmb('${id}')">✕</button>`;
+  list.appendChild(row);
+};
+
+window.onEmbSelect = (sel, rowId) => {
+  const opt = sel.options[sel.selectedIndex];
+  sel.dataset.cod = opt?.dataset?.cod||'';
+};
+
+function getEmbalagens() {
+  return [...document.querySelectorAll('.emb-row')].map(r=>{
+    const sel = r.querySelector('.emb-sel');
+    const inp = r.querySelector('.emb-cod');
+    const codigo = sel ? (sel.options[sel.selectedIndex]?.dataset?.cod||sel.value) : (inp?.value.trim().toUpperCase()||'');
+    return { codigo, qtd: r.querySelector('.emb-qtd')?.value.trim()||'' };
+  }).filter(e=>e.codigo||e.qtd);
+}
+window.removeEmb=(id)=>{const el=document.getElementById(id);if(el)el.remove();};
+
+// ── SALVAR REGISTRO ────────────────────────────────────
+window.salvarRegistro = async () => {
+  if(!['operador','administrador'].includes(window._userRole)){showToast('Sem permissão.',true);return;}
+  const cliId   = document.getElementById('f-cliente').value;
+  const placa   = document.getElementById('f-placa').value.trim().toUpperCase();
+  const nota    = document.getElementById('f-nota').value.trim();
+  const obs     = document.getElementById('f-obs').value.trim();
+  const embs    = getEmbalagens();
+  const cli     = window._clientes.find(c=>c.id===cliId);
+  if(!cliId)  {showToast('⚠ Selecione o cliente.',true);return;}
+  if(!placa)  {showToast('⚠ Informe a placa.',true);return;}
+  if(!nota)   {showToast('⚠ Informe a nota fiscal.',true);return;}
+  if(!embs.length||embs.some(e=>!e.codigo||!e.qtd)){showToast('⚠ Informe ao menos uma embalagem com código e quantidade.',true);return;}
+  const btn=document.getElementById('btn-salvar');
+  btn.textContent='Salvando...';btn.disabled=true;
+  try{
+    await addDoc(collection(db,'registros'),{
+      dataHora:formatDt(new Date()), timestamp:serverTimestamp(),
+      usuario:window._currentUser.displayName||window._currentUser.email,
+      uid:window._currentUser.uid,
+      placa, clienteId:cliId, clienteNome:cli?.nome||'', nota,
+      embalagens:embs, obs, fotos:window._fotos
+    });
+    showToast('✓ Registro salvo!');
+    limparForm();
+    await loadRegistros();
+    switchTab('consulta');
+  }catch(e){showToast('✕ Erro: '+(e.code||e.message),true);}
+  finally{btn.textContent='✓ Salvar Registro';btn.disabled=false;}
+};
+
+// ── LOAD REGISTROS ─────────────────────────────────────
+async function loadRegistros(){
+  try{
+    const snap=await getDocs(query(collection(db,'registros'),orderBy('timestamp','desc')));
+    window._registros=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderTabela();
+  }catch(e){console.error('loadRegistros:',e);showToast('Erro ao carregar registros.',true);}
+}
+window.loadRegistros=loadRegistros;
+
+// ── RENDER TABELA ──────────────────────────────────────
+window.renderTabela=()=>{
+  const fc=(document.getElementById('filter-cliente')?.value||'').toLowerCase();
+  const fk=(document.getElementById('filter-cod')?.value||'').toLowerCase();
+  const fdi=document.getElementById('filter-data-ini')?.value;
+  const fdf=document.getElementById('filter-data-fim')?.value;
+  const data=window._registros.filter(r=>{
+    if(fc&&!r.clienteNome?.toLowerCase().includes(fc)&&!r.cliente?.toLowerCase().includes(fc))return false;
+    if(fk&&!r.embalagens?.some(e=>e.codigo?.toLowerCase().includes(fk)))return false;
+    if(fdi||fdf){const p=r.dataHora?.split(' ')[0]?.split('/');if(p?.length===3){const d=`${p[2]}-${p[1]}-${p[0]}`;if(fdi&&d<fdi)return false;if(fdf&&d>fdf)return false;}}
+    return true;
+  });
+  document.getElementById('count-registros').textContent=data.length;
+  const tbody=document.getElementById('table-body');
+  const empty=document.getElementById('empty-state');
+  if(!data.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const canDel=window._userRole==='administrador';
+  tbody.innerHTML=data.map(r=>`
+    <tr>
+      <td style="white-space:nowrap;font-family:var(--font-mono);font-size:12px">${r.dataHora||'–'}</td>
+      <td>${esc(r.usuario||'–')}</td>
+      <td style="font-family:var(--font-mono);font-size:12px">${esc(r.placa||'–')}</td>
+      <td>${esc(r.clienteNome||r.cliente||'–')}</td>
+      <td style="font-family:var(--font-mono)">${esc(r.nota||'–')}</td>
+      <td>${(r.embalagens||[]).map(e=>`<span class="badge-emb">${esc(e.codigo)}×${esc(String(e.qtd))}</span>`).join('')}</td>
+      <td>${r.fotos?.length?`<button class="tag-foto" onclick="openDetail('${r.id}')">📷 ${r.fotos.length}</button>`:'<span style="color:var(--text3);font-size:12px">–</span>'}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text2)">${esc(r.obs||'–')}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-secondary btn-sm btn-icon" style="margin-right:4px" onclick="openDetail('${r.id}')">👁</button>
+        ${canDel?`<button class="btn btn-danger btn-sm btn-icon" onclick="askDelete('${r.id}')">🗑</button>`:''}
+      </td>
+    </tr>`).join('');
+};
+
+// ── DETAIL ─────────────────────────────────────────────
+window.openDetail=(id)=>{
+  const r=window._registros.find(x=>x.id===id);if(!r)return;
+  document.getElementById('modal-detail-content').innerHTML=`
+    <div class="detail-item"><label>DATA / HORA</label><span>${r.dataHora||'–'}</span></div>
+    <div class="detail-item"><label>USUÁRIO</label><span>${esc(r.usuario||'–')}</span></div>
+    <div class="detail-item"><label>PLACA</label><span style="font-family:var(--font-mono)">${esc(r.placa||'–')}</span></div>
+    <div class="detail-item"><label>CLIENTE</label><span>${esc(r.clienteNome||r.cliente||'–')}</span></div>
+    <div class="detail-item"><label>NOTA FISCAL</label><span style="font-family:var(--font-mono)">${esc(r.nota||'–')}</span></div>
+    <div class="detail-item" style="grid-column:1/-1"><label>EMBALAGENS</label><div>${(r.embalagens||[]).map(e=>`<span class="badge-emb">${esc(e.codigo)} × ${esc(String(e.qtd))}</span>`).join(' ')}</div></div>
+    ${r.obs?`<div class="detail-item" style="grid-column:1/-1"><label>OBSERVAÇÕES</label><span>${esc(r.obs)}</span></div>`:''}`;
+  const fs=document.getElementById('modal-foto-section');
+  if(r.fotos?.length){fs.style.display='block';document.getElementById('modal-fotos').innerHTML=r.fotos.map(f=>`<img src="${f}" onclick="openImgViewer('${f}')" alt="">`).join('');}
+  else{fs.style.display='none';}
+  document.getElementById('modal-detail').classList.add('open');
+};
+
+// ── DELETE REGISTRO ────────────────────────────────────
+window.askDelete=(id)=>{
+  window._pendingDeleteId=id;
+  document.getElementById('delete-pass-input').value='';
+  document.getElementById('delete-error').style.display='none';
+  document.getElementById('modal-delete').classList.add('open');
+  setTimeout(()=>document.getElementById('delete-pass-input').focus(),100);
+};
+window.confirmDelete=async()=>{
+  const pass=document.getElementById('delete-pass-input').value;
+  const errEl=document.getElementById('delete-error');
+  errEl.style.display='none';
+  if(pass!==ADMIN_PASS){showErr(errEl,'Senha incorreta.');return;}
+  try{
+    await deleteDoc(doc(db,'registros',window._pendingDeleteId));
+    window._registros=window._registros.filter(r=>r.id!==window._pendingDeleteId);
+    window._pendingDeleteId=null;
+    closeModal('modal-delete');renderTabela();
+    showToast('✓ Registro excluído.');
+  }catch(e){showErr(errEl,'Erro: '+(e.code||e.message));}
+};
+
+// ── FOTOS ──────────────────────────────────────────────
+window.handleFotos=async(input)=>{for(const f of Array.from(input.files)){window._fotos.push(await compressImg(f));}renderFotos();input.value='';};
+function compressImg(file){return new Promise(res=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const MAX=1200;let w=img.width,h=img.height;if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);URL.revokeObjectURL(url);res(cv.toDataURL('image/jpeg',.78));};img.src=url;});}
+function renderFotos(){document.getElementById('foto-preview').innerHTML=window._fotos.map((f,i)=>`<div class="foto-thumb"><img src="${f}" onclick="openImgViewer('${f}')" alt=""><button class="del-foto" onclick="removeFoto(${i})">✕</button></div>`).join('');}
+window.removeFoto=(i)=>{window._fotos.splice(i,1);renderFotos();};
+window.openImgViewer=(src)=>{document.getElementById('img-viewer-img').src=src;document.getElementById('img-viewer').classList.add('open');};
+window.closeImgViewer=()=>document.getElementById('img-viewer').classList.remove('open');
+
+// ── LIMPAR FORM ────────────────────────────────────────
+window.limparForm=()=>{
+  ['f-placa','f-nota','f-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-cliente').value='';
+  document.getElementById('emb-list').innerHTML='';
+  window._fotos=[];renderFotos();addEmbRow();
+};
+window.limparFiltros=()=>{
+  ['filter-cliente','filter-cod','filter-data-ini','filter-data-fim'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderTabela();
+};
+
+// ── EXPORT ─────────────────────────────────────────────
+window.exportCSV=()=>{
+  const data=getFiltered();if(!data.length){showToast('Nenhum dado.',true);return;}
+  const rows=[['Data/Hora','Usuário','Placa','Cliente','Nota Fiscal','Cód. Embalagem','Quantidade','Observações']];
+  data.forEach(r=>(r.embalagens?.length?r.embalagens:[{}]).forEach((e,i)=>rows.push([i===0?r.dataHora:'',i===0?(r.usuario||''):'',i===0?(r.placa||''):'',i===0?(r.clienteNome||r.cliente||''):'',i===0?(r.nota||''):'',e.codigo||'',e.qtd||'',i===0?(r.obs||''):''])));
+  dlFile('embalagens_'+ds()+'.csv','text/csv;charset=utf-8;','\uFEFF'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'));
+};
+window.exportXLSX=()=>{
+  const data=getFiltered();if(!data.length){showToast('Nenhum dado.',true);return;}
+  const rows=[['Data/Hora','Usuário','Placa','Cliente','Nota Fiscal','Cód. Embalagem','Quantidade','Observações']];
+  data.forEach(r=>(r.embalagens?.length?r.embalagens:[{}]).forEach((e,i)=>rows.push([i===0?r.dataHora:'',i===0?(r.usuario||''):'',i===0?(r.placa||''):'',i===0?(r.clienteNome||r.cliente||''):'',i===0?(r.nota||''):'',e.codigo||'',e.qtd||'',i===0?(r.obs||''):''])));
+  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[20,20,14,28,16,20,12,32].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Embalagens');XLSX.writeFile(wb,'embalagens_'+ds()+'.xlsx');
+};
+function getFiltered(){
+  const fc=(document.getElementById('filter-cliente')?.value||'').toLowerCase();
+  const fk=(document.getElementById('filter-cod')?.value||'').toLowerCase();
+  return window._registros.filter(r=>{if(fc&&!r.clienteNome?.toLowerCase().includes(fc)&&!r.cliente?.toLowerCase().includes(fc))return false;if(fk&&!r.embalagens?.some(e=>e.codigo?.toLowerCase().includes(fk)))return false;return true;});
+}
+function dlFile(name,type,content){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
+function ds(){const d=new Date();return`${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}`;}
+
+// ── ADMIN ──────────────────────────────────────────────
+window.checkAdminPass=()=>{
+  const v=document.getElementById('admin-pass-input').value;
+  const errEl=document.getElementById('admin-error');
+  if(v===ADMIN_PASS){document.getElementById('admin-gate-wrap').style.display='none';document.getElementById('admin-panel').style.display='block';loadUsers();}
+  else{showErr(errEl,'Senha incorreta.');}
+};
+window.lockAdmin=()=>{
+  document.getElementById('admin-gate-wrap').style.display='block';
+  document.getElementById('admin-panel').style.display='none';
+  document.getElementById('admin-pass-input').value='';
+  document.getElementById('admin-error').style.display='none';
+};
+
+async function loadUsers(){
+  const list=document.getElementById('users-list');
+  list.innerHTML=`<div class="empty-state"><div class="loader-ring" style="margin:0 auto"></div></div>`;
+  try{
+    const snap=await getDocs(collection(db,'usuarios'));
+    if(snap.empty){list.innerHTML=`<div class="empty-state"><div class="empty-icon">👥</div><p>Nenhum usuário ainda.</p></div>`;return;}
+    list.innerHTML=snap.docs.map(d=>{
+      const u=d.data();const ativo=u.ativo!==false;const perfil=u.perfil||'operador';
+      return`<div class="user-row">
+        <div class="user-info">
+          <div class="uname">${esc(u.nome||'–')}</div>
+          <div class="uemail">${esc(u.email||'–')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <select onchange="changeRole('${d.id}',this.value)" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 10px;font-family:var(--font-body);font-size:12px;outline:none;cursor:pointer;">
+            <option value="visualizador" ${perfil==='visualizador'?'selected':''}>Visualizador</option>
+            <option value="operador"     ${perfil==='operador'?'selected':''}>Operador</option>
+            <option value="administrador"${perfil==='administrador'?'selected':''}>Administrador</option>
+          </select>
+          <span class="user-status ${ativo?'status-active':'status-blocked'} role-tag">${ativo?'Ativo':'Bloqueado'}</span>
+          ${ativo?`<button class="btn btn-danger btn-sm" onclick="toggleUser('${d.id}',false)">Bloquear</button>`:`<button class="btn btn-secondary btn-sm" onclick="toggleUser('${d.id}',true)">Ativar</button>`}
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){list.innerHTML=`<div class="empty-state"><p style="color:var(--warn)">Erro: ${e.message}</p></div>`;}
+}
+
+window.changeRole=async(docId,perfil)=>{
+  try{await updateDoc(doc(db,'usuarios',docId),{perfil});showToast('✓ Perfil atualizado.');}
+  catch(e){showToast('Erro: '+e.message,true);}
+};
+window.toggleUser=async(docId,ativo)=>{
+  try{await updateDoc(doc(db,'usuarios',docId),{ativo});showToast(ativo?'✓ Usuário ativado.':'✓ Usuário bloqueado.');loadUsers();}
+  catch(e){showToast('Erro: '+e.message,true);}
+};
+
+// ── NAV ────────────────────────────────────────────────
+window.switchTab=(tab)=>{
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  ['registro','consulta','clientes','embalagens-cat','admin'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('.nav-tab')[i].classList.add('active');});
+  if(tab==='consulta')loadRegistros();
+};
+
+// ── DATETIME ───────────────────────────────────────────
+function initDatetime(){updateDt();setInterval(updateDt,1000);}
+function updateDt(){const el=document.getElementById('f-datetime');if(el)el.value=formatDt(new Date());}
+function formatDt(d){return`${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;}
+function p2(n){return String(n).padStart(2,'0');}
+
+// ── HELPERS ────────────────────────────────────────────
+window.closeModal=(id)=>document.getElementById(id).classList.remove('open');
+window.showToast=(msg,error=false)=>{const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(error?' error':'');clearTimeout(window._tt);window._tt=setTimeout(()=>{t.className='toast';},3500);};
+function showErr(el,msg){el.style.display='block';el.textContent=msg;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
+document.getElementById('img-viewer')?.addEventListener('click',function(e){if(e.target===this)closeImgViewer();});
+</script>
+</body>
+</html>
