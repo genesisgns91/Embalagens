@@ -132,7 +132,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .table-wrap th.sortable .sort-ind{display:inline-block;width:12px;margin-left:2px;opacity:.5;font-size:10px;}
 .table-wrap th.sortable.sort-active{color:var(--accent);}
 .table-wrap th.sortable.sort-active .sort-ind{opacity:1;}
-.badge-emb{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-family:var(--font-mono);background:rgba(0,119,255,.15);color:#60a5fa;margin:2px 2px 2px 0;}
+.badge-emb{display:inline-flex;align-items:center;gap:0;padding:3px 3px 3px 10px;border-radius:8px;font-size:12px;font-family:var(--font-mono);background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.35);color:var(--text);margin:2px 4px 2px 0;}
+.badge-emb .emb-cli{color:var(--text2);font-family:var(--font-body);margin-right:4px;}
+.badge-emb .emb-cod{color:var(--text);}
+.badge-emb .emb-qty{display:inline-block;background:var(--accent);color:#0d0f14;font-weight:700;padding:3px 10px;border-radius:6px;font-size:13px;margin-left:8px;letter-spacing:.3px;}
 .badge-cli{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;background:rgba(0,229,160,.1);color:var(--accent);margin:2px 2px 2px 0;}
 .tag-foto{display:inline-flex;align-items:center;gap:4px;background:rgba(0,229,160,.1);color:var(--accent);border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;border:none;font-family:var(--font-body);}
 .tag-foto:hover{background:rgba(0,229,160,.2);}
@@ -380,7 +383,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
   <div id="tab-embalagens-cat" class="page">
     <div class="page-header">
       <div><div class="page-title">Catálogo de Embalagens</div><div class="page-sub">Embalagens cadastradas por cliente</div></div>
-      <button class="btn btn-secondary" id="btn-nova-emb-cat" onclick="openModalEmbCat()">+ Nova Embalagem</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" id="btn-nova-emb-cat" onclick="openModalEmbCat()">+ Nova Embalagem</button>
+        <button class="btn btn-secondary" id="btn-import-emb-cat" style="display:none" onclick="openModalImportEmb()">📥 Importar planilha</button>
+      </div>
     </div>
     <div id="embcat-no-access" class="access-denied" style="display:none;">
       <div class="icon">🔒</div><p>Seu perfil não tem permissão para gerenciar embalagens.</p>
@@ -576,6 +582,39 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
   </div>
 </div>
 
+<!-- MODAL IMPORTAR PLANILHA DE EMBALAGENS -->
+<div id="modal-import-emb" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-import-emb')">✕</button>
+    <div class="modal-title">📥 Importar planilha de embalagens</div>
+    <div id="modal-import-emb-error" class="error-msg"></div>
+    <div id="modal-import-emb-success" class="success-msg"></div>
+    <div class="field"><label>CLIENTE *</label>
+      <select id="import-emb-cli">
+        <option value="">— Selecione o cliente —</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ARQUIVO EXCEL (.xlsx / .xls)</label>
+      <div class="single-upload-zone" id="import-emb-zone" onclick="document.getElementById('import-emb-file').click()">
+        <input type="file" id="import-emb-file" accept=".xlsx,.xls" onchange="handleImportEmbFile(this)" style="display:none">
+        <span class="su-placeholder" id="import-emb-file-label">📄 Selecionar arquivo…</span>
+      </div>
+    </div>
+    <div style="color:var(--text2);font-size:12px;line-height:1.6;margin-top:4px;">
+      A planilha deve conter as colunas nesta ordem, a partir da 2ª linha (a 1ª é o cabeçalho):<br>
+      <span style="font-family:var(--font-mono);color:var(--text3)">CÓDIGO DA EMBALAGEM · DESCRIÇÃO · NOME INTERNO · CÓD DATASUL · QUANT POR FARDO · VALOR DA EMBALAGEM · ITENS DA EMBALAGEM</span><br>
+      Colunas vazias serão consideradas como 0. Embalagens com o mesmo código já cadastradas para o cliente selecionado serão atualizadas; as demais serão criadas.
+    </div>
+    <div id="import-emb-summary" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:14px;font-size:13px;color:var(--text2);"></div>
+    <input type="hidden" id="import-emb-edit-id">
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-primary" style="flex:1" id="btn-processar-import-emb" onclick="processarImportEmb()" disabled>Processar planilha</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-import-emb')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- IMG VIEWER -->
 <div id="img-viewer">
   <button id="img-viewer-close" onclick="closeImgViewer()">✕ Fechar</button>
@@ -665,6 +704,7 @@ function applyRoleUI() {
 
   // EmbCat tab
   document.getElementById('btn-nova-emb-cat').style.display = canWrite ? 'inline-flex' : 'none';
+  document.getElementById('btn-import-emb-cat').style.display = canAdmin ? 'inline-flex' : 'none';
 }
 
 // ── AUTH FUNCTIONS ─────────────────────────────────────
@@ -753,6 +793,8 @@ function populateClienteSelects() {
   document.getElementById('emb-cat-cli').innerHTML = '<option value="">— Selecione o cliente —</option>' + opts;
   const filterSel = document.getElementById('filter-embcat-cli');
   filterSel.innerHTML = '<option value="">Todos os clientes</option>' + opts;
+  const importSel = document.getElementById('import-emb-cli');
+  if (importSel) importSel.innerHTML = '<option value="">— Selecione o cliente —</option>' + opts;
   // refresh any per-row cliente selects already rendered in "+ Registro", preserving selection
   document.querySelectorAll('.emb-cli').forEach(sel=>{
     const cur = sel.value;
@@ -1048,8 +1090,8 @@ window.salvarEmbCat = async () => {
   if(!cliId)  {showErr(errEl,'Selecione o cliente.');return;}
   if(!codigo) {showErr(errEl,'Informe o código da embalagem.');return;}
   if(!desc)   {showErr(errEl,'Informe a descrição.');return;}
-  const dupCodigo = window._embCat.some(e=>e.codigo===codigo && e.id!==editId);
-  if(dupCodigo){showErr(errEl,'Já existe uma embalagem cadastrada com este código.');return;}
+  const dupCodigo = window._embCat.some(e=>e.codigo===codigo && e.clienteId===cliId && e.id!==editId);
+  if(dupCodigo){showErr(errEl,'Este cliente já possui uma embalagem cadastrada com este código.');return;}
   const valorRaw = document.getElementById('emb-cat-valor').value;
   const data = { clienteId:cliId, codigo, descricao:desc,
     nomeInterno: document.getElementById('emb-cat-nome-int').value.trim(),
@@ -1095,7 +1137,106 @@ window.confirmDeleteEmb=async()=>{
   }catch(e){showErr(errEl,'Erro: '+e.message);}
 };
 
-// ── REGISTRO: linhas de embalagem (cliente + embalagem por linha) ──────
+// ── IMPORTAR PLANILHA DE EMBALAGENS (apenas administrador) ─────────────
+window.openModalImportEmb = () => {
+  if(window._userRole!=='administrador') return;
+  document.getElementById('modal-import-emb-error').style.display='none';
+  document.getElementById('modal-import-emb-success').style.display='none';
+  document.getElementById('import-emb-summary').style.display='none';
+  document.getElementById('import-emb-cli').value='';
+  document.getElementById('import-emb-file').value='';
+  document.getElementById('import-emb-file-label').textContent='📄 Selecionar arquivo…';
+  document.getElementById('btn-processar-import-emb').disabled=true;
+  window._importEmbRows=null;
+  populateClienteSelects();
+  document.getElementById('modal-import-emb').classList.add('open');
+};
+
+window.handleImportEmbFile = (input) => {
+  const errEl=document.getElementById('modal-import-emb-error'); errEl.style.display='none';
+  document.getElementById('modal-import-emb-success').style.display='none';
+  document.getElementById('import-emb-summary').style.display='none';
+  const file=input.files?.[0];
+  window._importEmbRows=null;
+  document.getElementById('btn-processar-import-emb').disabled=true;
+  if(!file) { document.getElementById('import-emb-file-label').textContent='📄 Selecionar arquivo…'; return; }
+  document.getElementById('import-emb-file-label').textContent='📄 '+file.name;
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      // ignora a 1ª linha (cabeçalho) e linhas totalmente vazias
+      const dataRows=rows.slice(1).filter(r=>r.some(c=>String(c).trim()!==''));
+      if(!dataRows.length){showErr(errEl,'Nenhuma linha de dados encontrada na planilha.');return;}
+      window._importEmbRows=dataRows;
+      document.getElementById('btn-processar-import-emb').disabled=false;
+      document.getElementById('import-emb-summary').style.display='block';
+      document.getElementById('import-emb-summary').textContent=`${dataRows.length} linha(s) encontrada(s) na planilha, prontas para processar.`;
+    }catch(e){showErr(errEl,'Erro ao ler o arquivo: '+e.message);}
+  };
+  reader.onerror=()=>showErr(errEl,'Erro ao ler o arquivo.');
+  reader.readAsArrayBuffer(file);
+};
+
+window.processarImportEmb = async () => {
+  const errEl=document.getElementById('modal-import-emb-error'); errEl.style.display='none';
+  const okEl=document.getElementById('modal-import-emb-success'); okEl.style.display='none';
+  const cliId=document.getElementById('import-emb-cli').value;
+  if(!cliId){showErr(errEl,'Selecione o cliente antes de processar.');return;}
+  const rows=window._importEmbRows;
+  if(!rows?.length){showErr(errEl,'Selecione um arquivo válido.');return;}
+
+  const btn=document.getElementById('btn-processar-import-emb');
+  btn.disabled=true; btn.textContent='Processando…';
+
+  const numOr0 = (v)=> (v===undefined||v===null||String(v).trim()==='') ? 0 : Number(v)||0;
+  const strOr0 = (v)=> (v===undefined||v===null||String(v).trim()==='') ? '0' : String(v).trim();
+
+  let criadas=0, atualizadas=0, erros=0;
+  for(const row of rows){
+    const codigo = String(row[0]??'').trim().toUpperCase();
+    if(!codigo){ erros++; continue; } // código é a chave de identificação; linha sem código é ignorada
+    const data = {
+      clienteId:  cliId,
+      codigo,
+      descricao:   strOr0(row[1]),
+      nomeInterno: strOr0(row[2]),
+      codDatasul:  numOr0(row[3]),
+      qtdFardo:    numOr0(row[4]),
+      valor:       numOr0(row[5]),
+      itens:       strOr0(row[6]),
+    };
+    try{
+      const existente = window._embCat.find(e=>e.codigo===codigo && e.clienteId===cliId);
+      if(existente){
+        await updateDoc(doc(db,'embalagensCat',existente.id),data);
+        Object.assign(existente,data);
+        atualizadas++;
+      } else {
+        const ref=await addDoc(collection(db,'embalagensCat'),{...data,criadoEm:serverTimestamp()});
+        window._embCat.push({id:ref.id,...data});
+        criadas++;
+      }
+    }catch(e){ erros++; }
+  }
+  window._embCat.sort((a,b)=>a.codigo.localeCompare(b.codigo));
+  renderEmbCat();
+
+  btn.disabled=false; btn.textContent='Processar planilha';
+  const summary=document.getElementById('import-emb-summary');
+  summary.style.display='block';
+  summary.textContent=`✓ ${criadas} criada(s), ${atualizadas} atualizada(s)${erros?`, ${erros} linha(s) com erro (código ausente)`:''}.`;
+  okEl.style.display='block';
+  okEl.textContent='Importação concluída.';
+  window._importEmbRows=null;
+  document.getElementById('import-emb-file').value='';
+  document.getElementById('import-emb-file-label').textContent='📄 Selecionar arquivo…';
+  btn.disabled=true;
+  showToast('✓ Planilha importada.');
+};
+
 window.addEmbRow = () => {
   const list=document.getElementById('emb-list'); if(!list) return;
   const id='emb_'+Date.now()+Math.random().toString(36).slice(2,6);
@@ -1203,6 +1344,9 @@ function registroMatchesCliente(r, fc){
   if(!fc) return true;
   return clientesNomesDoRegistro(r).some(n=>n.toLowerCase().includes(fc));
 }
+function renderBadgeEmb(e, multi){
+  return `<span class="badge-emb">${multi&&e.clienteNome?`<span class="emb-cli">${esc(e.clienteNome)}:</span>`:''}<span class="emb-cod">${esc(e.codigo)}</span><span class="emb-qty">${esc(String(e.qtd))}</span></span>`;
+}
 
 // ── RENDER TABELA ──────────────────────────────────────
 window.renderTabela=()=>{
@@ -1233,7 +1377,7 @@ window.renderTabela=()=>{
       <td>${esc(r.transportadora||'–')}</td>
       <td>${nomes.length? nomes.map(n=>`<span class="badge-cli">${esc(n)}</span>`).join('') : '–'}</td>
       <td style="font-family:var(--font-mono)">${esc(r.nota||'–')}</td>
-      <td>${(r.embalagens||[]).map(e=>`<span class="badge-emb">${multi&&e.clienteNome?esc(e.clienteNome)+': ':''}${esc(e.codigo)}×${esc(String(e.qtd))}</span>`).join('')}</td>
+      <td>${(r.embalagens||[]).map(e=>renderBadgeEmb(e,multi)).join('')}</td>
       <td>${r.fotos?.length?`<button class="tag-foto" onclick="openDetail('${r.id}')">📷 ${r.fotos.length}</button>`:'<span style="color:var(--text3);font-size:12px">–</span>'}</td>
       <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text2)">${esc(r.obs||'–')}</td>
       <td style="white-space:nowrap">
@@ -1256,7 +1400,7 @@ window.openDetail=(id)=>{
     <div class="detail-item"><label>TRANSPORTADORA</label><span>${esc(r.transportadora||'–')}</span></div>
     <div class="detail-item"><label>CLIENTE(S)</label><span>${nomes.length?esc(nomes.join(', ')):'–'}</span></div>
     <div class="detail-item"><label>NOTA FISCAL</label><span style="font-family:var(--font-mono)">${esc(r.nota||'–')}</span></div>
-    <div class="detail-item" style="grid-column:1/-1"><label>EMBALAGENS</label><div>${(r.embalagens||[]).map(e=>`<span class="badge-emb">${multi&&e.clienteNome?esc(e.clienteNome)+': ':''}${esc(e.codigo)} × ${esc(String(e.qtd))}</span>`).join(' ')}</div></div>
+    <div class="detail-item" style="grid-column:1/-1"><label>EMBALAGENS</label><div>${(r.embalagens||[]).map(e=>renderBadgeEmb(e,multi)).join(' ')}</div></div>
     ${r.obs?`<div class="detail-item" style="grid-column:1/-1"><label>OBSERVAÇÕES</label><span>${esc(r.obs)}</span></div>`:''}`;
   const fs=document.getElementById('modal-foto-section');
   if(r.fotos?.length){fs.style.display='block';document.getElementById('modal-fotos').innerHTML=r.fotos.map(f=>`<img src="${f}" onclick="openImgViewer('${f}')" alt="">`).join('');}
@@ -1432,7 +1576,7 @@ window.showToast=(msg,error=false)=>{const t=document.getElementById('toast');t.
 function showErr(el,msg){el.style.display='block';el.textContent=msg;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
+['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
 document.getElementById('img-viewer')?.addEventListener('click',function(e){if(e.target===this)closeImgViewer();});
 </script>
 </body>
