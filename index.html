@@ -734,7 +734,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 
 <!-- MODAL EMBALAGENS DO CLIENTE -->
 <div id="modal-cliente-embalagens" class="modal-overlay">
-  <div class="modal" style="max-width:760px;">
+  <div class="modal" style="max-width:min(950px,95vw);">
     <button class="modal-close" onclick="closeModal('modal-cliente-embalagens')">✕</button>
     <div class="modal-title">📦 Embalagens do Cliente</div>
     <div class="detail-grid" style="margin-bottom:18px;">
@@ -929,7 +929,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 
 <!-- MODAL HISTÓRICO DE MOVIMENTAÇÕES -->
 <div id="modal-historico" class="modal-overlay">
-  <div class="modal" style="max-width:820px;">
+  <div class="modal" style="max-width:min(1025px,95vw);">
     <button class="modal-close" onclick="closeModal('modal-historico')">✕</button>
     <div class="modal-title">📜 Histórico de Movimentações</div>
     <div class="detail-grid" style="margin-bottom:18px;">
@@ -1382,6 +1382,7 @@ async function loadEmbCat() {
     const snap = await getDocs(query(collection(db,'embalagensCat'),orderBy('codigo')));
     window._embCat = snap.docs.map(d=>({id:d.id,...d.data()}));
     renderEmbCat();
+    if (document.getElementById('clientes-grid')) renderClientes();
   } catch(e){ console.error('loadEmbCat:',e); }
 }
 window.loadEmbCat = loadEmbCat;
@@ -2741,6 +2742,7 @@ window.switchTab=(tab)=>{
   document.getElementById(`tab-${tab}`).classList.add('active');
   document.getElementById(`nav-${tab}`)?.classList.add('active');
   if(tab==='consulta')loadRegistros();
+  if(tab==='clientes')renderClientes();
   if(tab==='baixa')renderBaixaSaldo();
   if(tab==='solicitacoes')renderSolicitacoes();
 };
