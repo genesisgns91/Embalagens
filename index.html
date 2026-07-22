@@ -49,7 +49,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;}
 .btn-primary{background:var(--accent);color:#0d0f14;width:100%;padding:13px;}
 .btn-primary:hover{filter:brightness(1.1);}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(.3);}
 .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 .btn-secondary:hover{border-color:var(--accent2);}
 .btn-danger{background:rgba(255,107,53,.15);color:var(--warn);border:1px solid rgba(255,107,53,.3);}
@@ -491,7 +491,9 @@ th.col-vazias,th.col-cheias,th.col-total{color:var(--text);}
             <th class="sortable" onclick="sortBaixaSaldo('cliente')">Cliente<span class="sort-ind" id="sort-ind-bx-cliente"></span></th>
             <th class="sortable" onclick="sortBaixaSaldo('entradas')">Entradas<span class="sort-ind" id="sort-ind-bx-entradas"></span></th>
             <th class="sortable" onclick="sortBaixaSaldo('baixas')">Baixas<span class="sort-ind" id="sort-ind-bx-baixas"></span></th>
-            <th class="sortable" onclick="sortBaixaSaldo('saldo')">Saldo Disponível<span class="sort-ind" id="sort-ind-bx-saldo"></span></th>
+            <th class="sortable col-vazias" onclick="sortBaixaSaldo('vazio')">Saldo Vazio<span class="sort-ind" id="sort-ind-bx-vazio"></span></th>
+            <th class="sortable col-cheias" onclick="sortBaixaSaldo('cheio')">Saldo Cheio<span class="sort-ind" id="sort-ind-bx-cheio"></span></th>
+            <th class="sortable col-total" onclick="sortBaixaSaldo('total')">Saldo Total<span class="sort-ind" id="sort-ind-bx-total"></span></th>
             <th>--</th>
           </tr></thead>
           <tbody id="baixa-saldo-grid"></tbody>
@@ -767,24 +769,30 @@ th.col-vazias,th.col-cheias,th.col-total{color:var(--text);}
 
 <!-- MODAL BAIXA DE SALDO -->
 <div id="modal-baixa" class="modal-overlay">
-  <div class="modal" style="max-width:460px;">
+  <div class="modal" style="max-width:480px;">
     <button class="modal-close" onclick="closeModal('modal-baixa')">✕</button>
     <div class="modal-title">📉 Realizar Baixa de Saldo</div>
     <div id="modal-baixa-error" class="error-msg"></div>
     <div class="detail-grid" style="margin-bottom:16px;">
       <div class="detail-item"><label>CLIENTE</label><span id="baixa-info-cliente">–</span></div>
       <div class="detail-item"><label>EMBALAGEM</label><span id="baixa-info-embalagem">–</span></div>
-      <div class="detail-item"><label>SALDO DISPONÍVEL</label><span id="baixa-info-saldo" style="font-family:var(--font-mono);color:var(--accent)">0</span></div>
-      <div class="detail-item"><label>DATA / HORA <span style="color:var(--accent);font-size:10px">AUTO</span></label><span id="baixa-info-data">–</span></div>
+      <div class="detail-item"><label>SALDO VAZIO DISPONÍVEL</label><span id="baixa-info-saldo-vazio" style="font-family:var(--font-mono);font-weight:700;color:#60a5fa">0</span></div>
+      <div class="detail-item"><label>SALDO CHEIO DISPONÍVEL</label><span id="baixa-info-saldo-cheio" style="font-family:var(--font-mono);font-weight:700;color:var(--accent)">0</span></div>
+      <div class="detail-item" style="grid-column:1/-1"><label>DATA / HORA <span style="color:var(--accent);font-size:10px">AUTO</span></label><span id="baixa-info-data">–</span></div>
     </div>
     <div class="field"><label>USUÁRIO <span style="color:var(--accent);font-size:10px">AUTO</span></label><input type="text" id="baixa-usuario" readonly></div>
-    <div class="field"><label>QUANTIDADE A BAIXAR *</label><input type="number" id="baixa-qtd" min="1" placeholder="0"></div>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px;">
+      <div class="field" style="margin:0;"><label>QTD. A BAIXAR · <span style="color:#60a5fa">VAZIAS</span></label><input type="number" id="baixa-qtd-vazias" min="0" value="0" oninput="validateBaixaForm()"></div>
+      <div class="field" style="margin:0;"><label>QTD. A BAIXAR · <span style="color:var(--accent)">CHEIAS</span></label><input type="number" id="baixa-qtd-cheias" min="0" value="0" oninput="validateBaixaForm()"></div>
+    </div>
     <div class="field"><label>MOTIVO / OBSERVAÇÃO</label><textarea id="baixa-obs" rows="2" placeholder="Opcional…"></textarea></div>
     <input type="hidden" id="baixa-cli-id">
     <input type="hidden" id="baixa-codigo">
     <input type="hidden" id="baixa-emb-cat-id">
+    <input type="hidden" id="baixa-saldo-vazio-max">
+    <input type="hidden" id="baixa-saldo-cheio-max">
     <div style="display:flex;gap:10px;margin-top:8px;">
-      <button class="btn btn-primary" style="flex:1" id="btn-confirmar-baixa" onclick="confirmarBaixa()">Confirmar Baixa</button>
+      <button class="btn btn-primary" style="flex:1" id="btn-confirmar-baixa" onclick="confirmarBaixa()" disabled>Confirmar Baixa</button>
       <button class="btn btn-secondary" onclick="closeModal('modal-baixa')">Cancelar</button>
     </div>
   </div>
@@ -1401,12 +1409,27 @@ function getRecebidoNoPeriodo(emb, dataIni, dataFim){
 function getTotalEntradas(emb){
   return getRecebidoNoPeriodo(emb, '', ''); // sem filtro de período = soma total de entradas
 }
-function getTotalBaixas(emb){
+// Baixas manuais lançadas contra o saldo de VAZIAS (compatível com registros antigos, que tinham apenas o campo "qtd")
+function getTotalBaixasVazias(emb){
   let total = 0;
   for(const b of (window._baixas||[])){
-    if(b.codigo===emb.codigo && b.clienteId===emb.clienteId) total += Number(b.qtd)||0;
+    if(b.codigo===emb.codigo && b.clienteId===emb.clienteId){
+      total += (b.qtdVazias!=null) ? (Number(b.qtdVazias)||0) : (Number(b.qtd)||0);
+    }
   }
   return total;
+}
+// Baixas manuais lançadas contra o saldo de CHEIAS
+function getTotalBaixasCheias(emb){
+  let total = 0;
+  for(const b of (window._baixas||[])){
+    if(b.codigo===emb.codigo && b.clienteId===emb.clienteId) total += Number(b.qtdCheias)||0;
+  }
+  return total;
+}
+// Total de baixas (vazias + cheias) — usado apenas para exibição na coluna "Baixas"
+function getTotalBaixas(emb){
+  return getTotalBaixasVazias(emb) + getTotalBaixasCheias(emb);
 }
 function getTotalSolicitacoesAtendidas(emb){
   let total = 0;
@@ -1415,13 +1438,13 @@ function getTotalSolicitacoesAtendidas(emb){
   }
   return total;
 }
-// Saldo VAZIAS: entradas (+Registro) menos baixas manuais menos o que já foi transferido para CHEIAS via atendimento
+// Saldo VAZIAS: entradas (+Registro) menos baixas manuais de vazias menos o que já foi transferido para CHEIAS via atendimento
 function getSaldoVazias(emb){
-  return getTotalEntradas(emb) - getTotalBaixas(emb) - getTotalSolicitacoesAtendidas(emb);
+  return getTotalEntradas(emb) - getTotalBaixasVazias(emb) - getTotalSolicitacoesAtendidas(emb);
 }
-// Saldo CHEIAS: soma das solicitações atendidas (a quantidade atendida "vira" cheia)
+// Saldo CHEIAS: soma das solicitações atendidas (a quantidade atendida "vira" cheia) menos baixas manuais de cheias
 function getSaldoCheias(emb){
-  return getTotalSolicitacoesAtendidas(emb);
+  return getTotalSolicitacoesAtendidas(emb) - getTotalBaixasCheias(emb);
 }
 // Saldo TOTAL = Cheias + Vazias
 function getSaldoTotal(emb){
@@ -1452,7 +1475,8 @@ window.renderBaixaSaldo = () => {
     return true;
   });
   const empty = document.getElementById('baixa-saldo-empty');
-  if(!data.length){grid.innerHTML='';empty.style.display='block';applySortIndicator('bx', window._baixaSort, ['codigo','cliente','entradas','baixas','saldo']);return;}
+  const bxSortFields = ['codigo','cliente','entradas','baixas','vazio','cheio','total'];
+  if(!data.length){grid.innerHTML='';empty.style.display='block';applySortIndicator('bx', window._baixaSort, bxSortFields);return;}
   empty.style.display='none';
   const canWrite = ['operador','administrador'].includes(window._userRole);
   const bxGetVal = (e)=>{
@@ -1462,24 +1486,31 @@ window.renderBaixaSaldo = () => {
       case 'cliente': return (cli?.nome||'').toLowerCase();
       case 'entradas': return getTotalEntradas(e);
       case 'baixas': return getTotalBaixas(e);
-      case 'saldo': return getSaldoDisponivel(e);
+      case 'vazio': return getSaldoVazias(e);
+      case 'cheio': return getSaldoCheias(e);
+      case 'total': return getSaldoTotal(e);
       default: return '';
     }
   };
   data = genericSort(data, window._baixaSort, bxGetVal);
-  applySortIndicator('bx', window._baixaSort, ['codigo','cliente','entradas','baixas','saldo']);
+  applySortIndicator('bx', window._baixaSort, bxSortFields);
   grid.innerHTML = data.map(e=>{
     const cli = window._clientes.find(c=>c.id===e.clienteId);
     const entradas = getTotalEntradas(e);
     const baixas = getTotalBaixas(e);
-    const saldo = entradas - baixas - getTotalSolicitacoesAtendidas(e);
-    return `<tr>
+    const vazio = getSaldoVazias(e);
+    const cheio = getSaldoCheias(e);
+    const total = getSaldoTotal(e);
+    const semSaldo = total <= 0;
+    return `<tr${semSaldo?' style="opacity:.55"':''}>
       <td><div style="font-family:var(--font-mono);font-size:13px">${esc(e.codigo)}</div><div style="font-size:12px;color:var(--text2)">${esc(e.descricao||'–')}</div></td>
       <td style="color:var(--accent)">${esc(cli?.nome||'–')}</td>
       <td style="font-family:var(--font-mono)">${entradas}</td>
       <td style="font-family:var(--font-mono)">${baixas}</td>
-      <td style="font-family:var(--font-mono);font-weight:700;color:${saldo>0?'var(--accent)':'var(--text2)'}">${saldo}</td>
-      <td>${canWrite?`<button class="btn btn-secondary btn-sm" onclick="openModalBaixa('${e.id}')" ${saldo<=0?'disabled title="Sem saldo disponível"':''}>📉 Realizar Baixa</button>`:''}</td>
+      <td class="col-vazias" style="font-family:var(--font-mono);font-weight:700;color:${vazio>0?'#60a5fa':'var(--text2)'}">${vazio}</td>
+      <td class="col-cheias" style="font-family:var(--font-mono);font-weight:700;color:${cheio>0?'var(--accent)':'var(--text2)'}">${cheio}</td>
+      <td class="col-total" style="font-family:var(--font-mono);font-weight:700;color:${total>0?'var(--text)':'var(--text3)'}">${total}${semSaldo?' <span style="font-size:10px;color:var(--warn);font-family:var(--font-body);font-weight:600;">· sem saldo</span>':''}</td>
+      <td>${canWrite?`<button class="btn btn-secondary btn-sm" onclick="openModalBaixa('${e.id}')" ${semSaldo?'disabled':''} title="${semSaldo?'Sem saldo disponível para baixa':'Realizar baixa deste item'}">📉 Realizar Baixa</button>`:''}</td>
     </tr>`;
   }).join('');
 };
@@ -1492,51 +1523,89 @@ window.sortBaixaSaldo=(field)=>{
 window.openModalBaixa = (embCatId) => {
   const e = window._embCat.find(x=>x.id===embCatId); if(!e) return;
   const cli = window._clientes.find(c=>c.id===e.clienteId);
-  const saldo = getSaldoDisponivel(e);
+  const saldoVazio = getSaldoVazias(e);
+  const saldoCheio = getSaldoCheias(e);
   document.getElementById('modal-baixa-error').style.display='none';
   document.getElementById('baixa-info-cliente').textContent = cli?.nome||'–';
   document.getElementById('baixa-info-embalagem').textContent = `${e.codigo} – ${e.descricao||''}`;
-  document.getElementById('baixa-info-saldo').textContent = saldo;
+  document.getElementById('baixa-info-saldo-vazio').textContent = saldoVazio;
+  document.getElementById('baixa-info-saldo-cheio').textContent = saldoCheio;
   document.getElementById('baixa-info-data').textContent = formatDt(new Date());
   document.getElementById('baixa-usuario').value = window._currentUser?.displayName || window._currentUser?.email || '';
-  document.getElementById('baixa-qtd').value = '';
-  document.getElementById('baixa-qtd').max = saldo;
+  document.getElementById('baixa-qtd-vazias').value = 0;
+  document.getElementById('baixa-qtd-vazias').max = saldoVazio;
+  document.getElementById('baixa-qtd-cheias').value = 0;
+  document.getElementById('baixa-qtd-cheias').max = saldoCheio;
   document.getElementById('baixa-obs').value = '';
   document.getElementById('baixa-cli-id').value = e.clienteId;
   document.getElementById('baixa-codigo').value = e.codigo;
   document.getElementById('baixa-emb-cat-id').value = e.id;
+  document.getElementById('baixa-saldo-vazio-max').value = saldoVazio;
+  document.getElementById('baixa-saldo-cheio-max').value = saldoCheio;
   document.getElementById('modal-baixa').classList.add('open');
+  validateBaixaForm();
+};
+
+// Validação em tempo real do formulário de baixa: impede vazias/cheias acima do saldo
+// disponível de cada tipo e exige que pelo menos um dos dois campos seja > 0.
+window.validateBaixaForm = () => {
+  const errEl = document.getElementById('modal-baixa-error');
+  const btn   = document.getElementById('btn-confirmar-baixa');
+  const vaziasInput = document.getElementById('baixa-qtd-vazias');
+  const cheiasInput = document.getElementById('baixa-qtd-cheias');
+  const saldoVazio = Number(document.getElementById('baixa-saldo-vazio-max').value)||0;
+  const saldoCheio = Number(document.getElementById('baixa-saldo-cheio-max').value)||0;
+
+  let vazias = Number(vaziasInput.value);
+  let cheias = Number(cheiasInput.value);
+  if(isNaN(vazias) || vazias<0) vazias = 0;
+  if(isNaN(cheias) || cheias<0) cheias = 0;
+
+  let msg = '';
+  if(vazias > saldoVazio) msg = `Quantidade de VAZIAS maior que o saldo disponível (${saldoVazio}).`;
+  else if(cheias > saldoCheio) msg = `Quantidade de CHEIAS maior que o saldo disponível (${saldoCheio}).`;
+  else if(vazias<=0 && cheias<=0) msg = 'Informe uma quantidade maior que zero em Vazias ou em Cheias.';
+
+  if(msg){ showErr(errEl,msg); btn.disabled = true; return false; }
+  errEl.style.display='none';
+  btn.disabled = false;
+  return true;
 };
 
 window.confirmarBaixa = async () => {
   if(!['operador','administrador'].includes(window._userRole)){ showToast('Sem permissão.', true); return; }
   const errEl = document.getElementById('modal-baixa-error');
-  errEl.style.display='none';
+  if(!validateBaixaForm()) return;
   const embCatId  = document.getElementById('baixa-emb-cat-id').value;
   const clienteId = document.getElementById('baixa-cli-id').value;
   const codigo    = document.getElementById('baixa-codigo').value;
-  const qtdRaw    = document.getElementById('baixa-qtd').value.trim();
+  const qtdVazias = Number(document.getElementById('baixa-qtd-vazias').value)||0;
+  const qtdCheias = Number(document.getElementById('baixa-qtd-cheias').value)||0;
   const obs       = document.getElementById('baixa-obs').value.trim();
   const e = window._embCat.find(x=>x.id===embCatId);
   if(!e){ showErr(errEl,'Embalagem não encontrada.'); return; }
-  if(!qtdRaw || isNaN(Number(qtdRaw)) || Number(qtdRaw)<=0){ showErr(errEl,'Informe uma quantidade válida.'); return; }
-  const qtd = Number(qtdRaw);
+
   // revalida o saldo no momento da confirmação, usando os dados mais recentes em memória
-  const saldoAtual = getSaldoDisponivel(e);
-  if(qtd > saldoAtual){ showErr(errEl, `Quantidade maior que o saldo disponível (${saldoAtual}).`); return; }
+  const saldoVazioAtual = getSaldoVazias(e);
+  const saldoCheioAtual = getSaldoCheias(e);
+  if(qtdVazias > saldoVazioAtual){ showErr(errEl, `Quantidade de VAZIAS maior que o saldo disponível (${saldoVazioAtual}).`); return; }
+  if(qtdCheias > saldoCheioAtual){ showErr(errEl, `Quantidade de CHEIAS maior que o saldo disponível (${saldoCheioAtual}).`); return; }
+  if(qtdVazias<=0 && qtdCheias<=0){ showErr(errEl, 'Informe uma quantidade maior que zero em Vazias ou em Cheias.'); return; }
 
   const cli = window._clientes.find(c=>c.id===clienteId);
   const btn = document.getElementById('btn-confirmar-baixa');
   btn.disabled = true; btn.textContent = 'Salvando...';
   try{
     const dataHora = formatDt(new Date());
-    await addDoc(collection(db,'baixas_embalagens'), {
+    const usuario = window._currentUser.displayName || window._currentUser.email;
+    const novaBaixa = {
       dataHora, timestamp: serverTimestamp(),
-      usuario: window._currentUser.displayName || window._currentUser.email,
-      uid: window._currentUser.uid,
-      clienteId, clienteNome: cli?.nome||'', codigo, qtd, obs
-    });
-    window._baixas.unshift({ dataHora, usuario: window._currentUser.displayName || window._currentUser.email, uid: window._currentUser.uid, clienteId, clienteNome: cli?.nome||'', codigo, qtd, obs });
+      usuario, uid: window._currentUser.uid,
+      clienteId, clienteNome: cli?.nome||'', codigo,
+      qtdVazias, qtdCheias, obs
+    };
+    await addDoc(collection(db,'baixas_embalagens'), novaBaixa);
+    window._baixas.unshift({ ...novaBaixa, timestamp:new Date() });
     showToast('✓ Baixa registrada!');
     closeModal('modal-baixa');
     renderBaixaSaldo();
