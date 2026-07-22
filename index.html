@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magius · Controle de Embalagens</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#181C26;--surface:#1D212B;--surface2:#1c2030;--border:#252a3a;
+  --accent:#00e5a0;--accent2:#0077ff;--warn:#ff6b35;--ok:#00e5a0;
+  --text:#e8eaf0;--text2:#7a8099;--text3:#4a5068;
+  --radius:10px;--font-mono:'Space Mono',monospace;--font-body:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;font-size:15px;}
+::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* LOADING */
+#loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;}
+.loader-ring{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* AUTH */
+#auth-screen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 36px;width:100%;max-width:440px;}
+.auth-logo{font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;}
+.auth-title{font-size:24px;font-weight:600;margin-bottom:6px;}
+.auth-sub{color:var(--text2);font-size:13px;margin-bottom:32px;}
+.auth-tabs{display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:4px;margin-bottom:28px;}
+.auth-tab{flex:1;padding:8px;background:none;border:none;color:var(--text2);font-family:var(--font-body);font-size:13px;cursor:pointer;border-radius:6px;transition:all .2s;}
+.auth-tab.active{background:var(--surface2);color:var(--text);font-weight:500;}
+.pass-wrap{position:relative;}
+.pass-wrap input{padding-right:42px;}
+.pass-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0;}
+.forgot-link{display:block;text-align:right;font-size:12px;color:var(--accent2);cursor:pointer;margin-top:6px;text-decoration:none;}
+.forgot-link:hover{text-decoration:underline;}
+
+/* FIELDS */
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500;letter-spacing:.5px;}
+.field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-family:var(--font-body);font-size:14px;transition:border-color .2s;outline:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent2);}
+.field textarea{resize:vertical;min-height:80px;}
+.field input[readonly]{color:var(--text2);cursor:default;}
+.field select option{background:var(--surface);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;}
+.btn-primary{background:var(--accent);color:#0d0f14;width:100%;padding:13px;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent2);}
+.btn-danger{background:rgba(255,107,53,.15);color:var(--warn);border:1px solid rgba(255,107,53,.3);}
+.btn-danger:hover{background:rgba(255,107,53,.25);}
+.btn-sm{padding:7px 14px;font-size:13px;}
+.btn-icon{padding:8px;border-radius:8px;}
+.error-msg{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.3);color:var(--warn);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
+.success-msg{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--accent);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
+
+/* APP SHELL */
+#app{display:none;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-brand{font-family:var(--font-mono);font-size:24px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.user-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text2);}
+.user-badge span{color:var(--text);font-weight:500;}
+.role-tag{font-size:10px;padding:2px 8px;border-radius:10px;font-family:var(--font-mono);}
+.role-visualizador{background:rgba(122,128,153,.15);color:var(--text2);}
+.role-operador{background:rgba(0,119,255,.15);color:#60a5fa;}
+.role-administrador{background:rgba(0,229,160,.15);color:var(--accent);}
+
+.nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 24px;gap:4px;overflow-x:auto;}
+.nav-tab{padding:14px 16px;background:none;border:none;color:var(--text2);font-family:var(--font-body);font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s;font-weight:500;white-space:nowrap;}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.nav-tab:hover:not(.active){color:var(--text);}
+.nav-tab:disabled{opacity:.3;cursor:not-allowed;}
+.page{display:none;padding:24px 20px;max-width:1900px;margin:0 auto;}
+.page.active{display:block;}
+
+/* PAGE HEADER */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap;}
+.page-title{font-size:22px;font-weight:600;}
+.page-sub{color:var(--text2);font-size:13px;margin-top:4px;}
+
+/* FORM CARDS */
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:24px;}
+.form-card-title{font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;}
+.form-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));}
+.form-grid .span2{grid-column:span 2;}
+.form-grid .full{grid-column:1/-1;}
+
+/* EMBALAGENS INPUT */
+.emb-row{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed var(--border);}
+.emb-row:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.emb-row .field{flex:1 1 160px;margin:0;}
+.btn-add-emb{background:none;border:1px dashed var(--border);color:var(--text2);border-radius:var(--radius);padding:9px 16px;cursor:pointer;font-family:var(--font-body);font-size:13px;transition:all .2s;width:100%;margin-top:8px;}
+.btn-add-emb:hover{border-color:var(--accent);color:var(--accent);}
+.btn-rem-emb{flex:0 0 auto;background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);color:var(--warn);border-radius:8px;padding:10px 12px;cursor:pointer;font-size:16px;transition:all .2s;}
+.btn-rem-emb:hover{background:rgba(255,107,53,.25);}
+
+/* FOTO */
+.foto-zone{border:1.5px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;}
+.foto-zone:hover{border-color:var(--accent2);}
+.foto-zone-icon{font-size:28px;margin-bottom:8px;}
+.foto-zone-text{color:var(--text2);font-size:13px;}
+.foto-preview{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;}
+.foto-thumb{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+.foto-thumb img{width:100%;height:100%;object-fit:cover;}
+.foto-thumb .del-foto{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:4px;width:18px;height:18px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;}
+.single-upload-zone{border:1.5px dashed var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:border-color .2s;display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;}
+.single-upload-zone:hover{border-color:var(--accent2);}
+.single-upload-zone .su-placeholder{color:var(--text2);font-size:13px;}
+.icon-preview-img{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--border);}
+.capa-preview-img{width:100%;max-height:140px;border-radius:10px;object-fit:cover;border:1px solid var(--border);}
+.list-thumb{width:42px;height:42px;border-radius:8px;object-fit:cover;border:1px solid var(--border);vertical-align:middle;flex-shrink:0;}
+.list-thumb-placeholder{width:42px;height:42px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--text3);flex-shrink:0;}
+.name-cell{display:flex;align-items:center;gap:10px;}
+
+/* TABLE */
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.filter-bar .field{margin:0;flex:1;min-width:160px;}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.table-wrap table{width:100%;border-collapse:collapse;font-size:13px;}
+.table-wrap th{background:var(--surface2);padding:11px 14px;text-align:left;color:var(--text2);font-weight:500;font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
+.table-wrap td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+.table-wrap tr:last-child td{border-bottom:none;}
+.table-wrap tr:hover td{background:rgba(255,255,255,.02);}
+.table-wrap th.sortable{cursor:pointer;user-select:none;transition:color .2s;}
+.table-wrap th.sortable:hover{color:var(--text);}
+.table-wrap th.sortable .sort-ind{display:inline-block;width:12px;margin-left:2px;opacity:.5;font-size:10px;}
+.table-wrap th.sortable.sort-active{color:var(--accent);}
+.table-wrap th.sortable.sort-active .sort-ind{opacity:1;}
+.badge-emb{display:inline-flex;align-items:center;gap:0;padding:3px 3px 3px 10px;border-radius:8px;font-size:12px;font-family:var(--font-mono);background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.35);color:var(--text);margin:2px 4px 2px 0;}
+.badge-emb .emb-cli{color:var(--text2);font-family:var(--font-body);margin-right:4px;}
+.badge-emb .emb-cod{color:var(--text);}
+.badge-emb .emb-qty{display:inline-block;background:var(--accent);color:#0d0f14;font-weight:700;padding:3px 10px;border-radius:6px;font-size:13px;margin-left:8px;letter-spacing:.3px;}
+.badge-cli{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;background:rgba(0,229,160,.1);color:var(--accent);margin:2px 2px 2px 0;}
+.badge-status{display:inline-block;padding:4px 11px;border-radius:10px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;}
+.badge-status.pendente{background:rgba(255,107,53,.15);color:var(--warn);}
+.badge-status.atendido{background:rgba(0,229,160,.15);color:var(--accent);}
+.badge-status.recusado{background:rgba(255,71,87,.15);color:#ff4757;}
+.col-vazias{background:rgba(0,119,255,.07);border-left:1px solid rgba(0,119,255,.25);}
+.col-cheias{background:rgba(0,229,160,.07);border-left:1px solid rgba(0,229,160,.25);}
+.col-total{background:rgba(255,255,255,.045);border-left:1px solid var(--border);font-weight:700;}
+th.col-vazias,th.col-cheias,th.col-total{color:var(--text);}
+.tag-foto{display:inline-flex;align-items:center;gap:4px;background:rgba(0,229,160,.1);color:var(--accent);border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;border:none;font-family:var(--font-body);}
+.tag-foto:hover{background:rgba(0,229,160,.2);}
+.empty-state{padding:48px;text-align:center;color:var(--text3);}
+.empty-state .empty-icon{font-size:32px;margin-bottom:12px;}
+
+/* EXPORT BAR */
+.export-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+.export-bar .count{font-size:13px;color:var(--text2);}
+.export-bar .count span{color:var(--text);font-weight:600;}
+.export-btns{display:flex;gap:8px;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;position:relative;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px;}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{color:var(--text);}
+.foto-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+.foto-gallery img{width:100%;border-radius:8px;border:1px solid var(--border);cursor:pointer;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:20px;}
+.detail-item label{font-size:11px;color:var(--text2);display:block;margin-bottom:2px;}
+
+/* ADMIN */
+.admin-gate{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:400px;margin:0 auto;}
+.users-list{display:flex;flex-direction:column;gap:10px;}
+.user-row{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.user-info .uname{font-weight:500;font-size:14px;}
+.user-info .uemail{font-size:12px;color:var(--text2);margin-top:2px;}
+
+/* CATALOG CARDS */
+.catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.catalog-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .2s;}
+.catalog-card:hover{border-color:var(--border);}
+.catalog-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:8px;}
+.catalog-card-title{font-weight:600;font-size:15px;}
+.catalog-card-sub{font-size:12px;color:var(--text2);margin-top:3px;}
+.catalog-card-actions{display:flex;gap:6px;flex-shrink:0;}
+.catalog-card-fields{display:flex;flex-direction:column;gap:6px;}
+.cf-row{display:flex;justify-content:space-between;font-size:12px;}
+.cf-label{color:var(--text2);}
+.cf-val{color:var(--text);font-family:var(--font-mono);font-size:11px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:14px 18px;font-size:13px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;max-width:300px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error{border-left-color:var(--warn);}
+
+/* IMG VIEWER */
+#img-viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;align-items:center;justify-content:center;}
+#img-viewer.open{display:flex;}
+#img-viewer img{max-width:95vw;max-height:95vh;border-radius:8px;object-fit:contain;}
+#img-viewer-close{position:absolute;top:16px;right:16px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font-body);font-size:13px;}
+
+/* TOGGLE SWITCH */
+.switch{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;position:absolute;}
+.switch .slider{position:absolute;cursor:pointer;inset:0;background:var(--surface2);border:1px solid var(--border);transition:.2s;border-radius:26px;}
+.switch .slider:before{position:absolute;content:"";height:18px;width:18px;left:2px;bottom:2px;background:var(--text2);transition:.2s;border-radius:50%;}
+.switch input:checked + .slider{background:rgba(0,229,160,.2);border-color:var(--accent);}
+.switch input:checked + .slider:before{transform:translateX(20px);background:var(--accent);}
+.switch input:disabled + .slider{opacity:.5;cursor:not-allowed;}
+.config-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.config-row:not(:last-child){margin-bottom:16px;padding-bottom:16px;border-bottom:1px dashed var(--border);}
+.config-row-title{font-weight:500;font-size:14px;}
+.config-row-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+
+/* ACCESS DENIED */
+.access-denied{text-align:center;padding:60px 24px;color:var(--text3);}
+.access-denied .icon{font-size:40px;margin-bottom:16px;}
+.access-denied p{font-size:14px;color:var(--text2);}
+
+@media(max-width:600px){
+  .page{padding:20px 16px;}.topbar{padding:0 16px;}
+  .nav-tabs{padding:0 8px;}.nav-tab{padding:12px 10px;font-size:12px;}
+  .form-card{padding:20px 16px;}.detail-grid{grid-template-columns:1fr;}
+  .catalog-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="loader-ring"></div>
+  <div style="font-size:12px;color:var(--text2);font-family:var(--font-mono);letter-spacing:2px;">CARREGANDO...</div>
+</div>
+
+<!-- AUTH -->
+<div id="auth-screen" style="display:none;">
+  <div class="auth-card">
+    <div class="auth-logo">Magius</div>
+    <div class="auth-title">Controle de Embalagens</div>
+    <div class="auth-sub" id="auth-sub-text">Faça login para continuar</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Entrar</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Criar conta</button>
+      <button class="auth-tab" onclick="switchAuthTab('forgot')">Recuperar</button>
+    </div>
+    <div id="auth-error" class="error-msg"></div>
+    <div id="auth-success" class="success-msg"></div>
+
+    <!-- LOGIN -->
+    <div id="login-form">
+      <div class="field"><label>E-MAIL</label><input type="email" id="login-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="field"><label>SENHA</label>
+        <div class="pass-wrap"><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"><button class="pass-toggle" type="button" onclick="togglePass('login-pass',this)">👁</button></div>
+        <span class="forgot-link" onclick="switchAuthTab('forgot')">Esqueceu a senha?</span>
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register-form" style="display:none;">
+      <div class="field"><label>NOME COMPLETO</label><input type="text" id="reg-name" placeholder="Seu nome completo"></div>
+      <div class="field"><label>E-MAIL</label><input type="email" id="reg-email" placeholder="seu@email.com"></div>
+      <div class="field"><label>SENHA</label>
+        <div class="pass-wrap"><input type="password" id="reg-pass" placeholder="mínimo 6 caracteres"><button class="pass-toggle" type="button" onclick="togglePass('reg-pass',this)">👁</button></div>
+      </div>
+      <div class="field"><label>CONFIRMAR SENHA</label>
+        <div class="pass-wrap"><input type="password" id="reg-pass2" placeholder="repita a senha" onkeydown="if(event.key==='Enter')doRegister()"><button class="pass-toggle" type="button" onclick="togglePass('reg-pass2',this)">👁</button></div>
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()">Criar conta</button>
+    </div>
+
+    <!-- FORGOT -->
+    <div id="forgot-form" style="display:none;">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">Informe seu e-mail cadastrado e enviaremos um link para redefinir sua senha.</div>
+      <div class="field"><label>E-MAIL</label><input type="email" id="forgot-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doForgot()"></div>
+      <button class="btn btn-primary" onclick="doForgot()">Enviar link de recuperação</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">Magius · Embalagens</div>
+    <div class="topbar-right">
+      <div class="user-badge">Olá, <span id="topbar-name">–</span> <span id="topbar-role" class="role-tag"></span></div>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="nav-registro" onclick="switchTab('registro')">＋ Registro</button>
+    <button class="nav-tab" id="nav-consulta" onclick="switchTab('consulta')">🔍 Consulta</button>
+    <button class="nav-tab" id="nav-clientes" onclick="switchTab('clientes')">🏢 Clientes</button>
+    <button class="nav-tab" id="nav-embalagens-cat" onclick="switchTab('embalagens-cat')">📦 Embalagens</button>
+    <button class="nav-tab" id="nav-baixa" onclick="switchTab('baixa')" style="display:none">📉 Baixa de Saldo</button>
+    <button class="nav-tab" id="nav-solicitacoes" onclick="switchTab('solicitacoes')" style="display:none">📋 Solicitações</button>
+    <button class="nav-tab" id="nav-admin" onclick="switchTab('admin')">⚙ Adm</button>
+  </div>
+
+  <!-- REGISTRO -->
+  <div id="tab-registro" class="page active">
+    <div class="page-header">
+      <div><div class="page-title">Novo Registro de Entrada</div><div class="page-sub">Preencha os dados da carga recebida</div></div>
+    </div>
+    <div id="reg-no-access" class="access-denied" style="display:none;">
+      <div class="icon">🔒</div><p>Seu perfil não tem permissão para registrar entradas.</p>
+    </div>
+    <div id="reg-form-wrap">
+      <div class="form-card">
+        <div class="form-card-title">🚛 Dados do recebimento</div>
+        <div class="form-grid">
+          <div class="field"><label>DATA / HORA <span style="color:var(--accent);font-size:10px">AUTO</span></label><input type="text" id="f-datetime" readonly></div>
+          <div class="field"><label>USUÁRIO <span style="color:var(--accent);font-size:10px">AUTO</span></label><input type="text" id="f-user" readonly></div>
+          <div class="field"><label>PLACA DO CAMINHÃO</label><input type="text" id="f-placa" placeholder="AAA-0A00" maxlength="8" oninput="maskPlaca(this)"></div>
+          <div class="field"><label>TRANSPORTADORA</label><input type="text" id="f-transportadora" placeholder="Nome da transportadora"></div>
+          <div class="field"><label>NÚMERO DA NOTA FISCAL *</label><input type="text" id="f-nota" placeholder="000000"></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="form-card-title">📦 Embalagens Recebidas</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:14px;">Uma nota fiscal pode conter embalagens de clientes diferentes — selecione o cliente em cada linha.</div>
+        <div id="emb-list"></div>
+        <button class="btn-add-emb" onclick="addEmbRow()">+ Adicionar embalagem</button>
+      </div>
+      <div class="form-card">
+        <div class="form-card-title">📷 Fotos da Carga</div>
+        <div class="foto-zone" onclick="document.getElementById('foto-input').click()">
+          <input type="file" id="foto-input" accept="image/*" multiple capture="environment" onchange="handleFotos(this)" style="display:none">
+          <div class="foto-zone-icon">📷</div>
+          <div class="foto-zone-text">Toque para fotografar ou selecionar da galeria<br><small style="color:var(--text3)">Aceita múltiplas fotos</small></div>
+        </div>
+        <div class="foto-preview" id="foto-preview"></div>
+      </div>
+      <div class="form-card">
+        <div class="form-card-title">📝 Observações</div>
+        <textarea id="f-obs" placeholder="Observações adicionais (opcional)…" rows="3" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-family:var(--font-body);font-size:14px;outline:none;resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" style="flex:1;min-width:160px" id="btn-salvar" onclick="salvarRegistro()">✓ Salvar Registro</button>
+        <button class="btn btn-secondary" onclick="limparForm()">↺ Limpar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONSULTA -->
+  <div id="tab-consulta" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Consulta de Registros</div><div class="page-sub">Histórico de entradas de embalagens</div></div>
+    </div>
+    <div class="filter-bar">
+      <div class="field"><label>FILTRAR POR CLIENTE</label><input type="text" id="filter-cliente" placeholder="Nome do cliente..." oninput="renderTabela()"></div>
+      <div class="field"><label>FILTRAR POR CÓD. EMBALAGEM</label><input type="text" id="filter-cod" placeholder="Código..." oninput="renderTabela()"></div>
+      <div class="field"><label>DATA INICIAL</label><input type="date" id="filter-data-ini" oninput="renderTabela()"></div>
+      <div class="field"><label>DATA FINAL</label><input type="date" id="filter-data-fim" oninput="renderTabela()"></div>
+      <div style="display:flex;align-items:flex-end;"><button class="btn btn-secondary btn-sm" onclick="limparFiltros()">✕ Limpar</button></div>
+    </div>
+    <div class="export-bar">
+      <div class="count">Exibindo <span id="count-registros">0</span> registros</div>
+      <div class="export-btns">
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportXLSX()">⬇ Excel (.xlsx)</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="sortRegistros('data')">Data / Hora<span class="sort-ind" id="sort-ind-reg-data"></span></th>
+            <th class="sortable" onclick="sortRegistros('usuario')">Usuário<span class="sort-ind" id="sort-ind-reg-usuario"></span></th>
+            <th class="sortable" onclick="sortRegistros('placa')">Placa<span class="sort-ind" id="sort-ind-reg-placa"></span></th>
+            <th class="sortable" onclick="sortRegistros('transportadora')">Transportadora<span class="sort-ind" id="sort-ind-reg-transportadora"></span></th>
+            <th class="sortable" onclick="sortRegistros('cliente')">Cliente(s)<span class="sort-ind" id="sort-ind-reg-cliente"></span></th>
+            <th class="sortable" onclick="sortRegistros('nota')">Nota Fiscal<span class="sort-ind" id="sort-ind-reg-nota"></span></th>
+            <th>Embalagens</th><th>Fotos</th><th>Obs.</th><th>--</th>
+          </tr></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div id="empty-state" class="empty-state" style="display:none;">
+        <div class="empty-icon">📭</div><p>Nenhum registro encontrado</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLIENTES -->
+  <div id="tab-clientes" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Cadastro de Clientes</div><div class="page-sub">Gerencie os clientes cadastrados</div></div>
+      <button class="btn btn-secondary" id="btn-novo-cliente" onclick="openModalCliente()">+ Novo Cliente</button>
+    </div>
+    <div id="clientes-no-access" class="access-denied" style="display:none;">
+      <div class="icon">🔒</div><p>Seu perfil não tem permissão para gerenciar clientes.</p>
+    </div>
+    <div id="clientes-wrap">
+      <div class="filter-bar">
+        <div class="field"><label>BUSCAR CLIENTE</label><input type="text" id="filter-cli-nome" placeholder="Nome do cliente..." oninput="renderClientes()"></div>
+      </div>
+      <div class="table-wrap">
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr>
+              <th class="sortable" onclick="sortClientes('nome')">Cliente<span class="sort-ind" id="sort-ind-cli-nome"></span></th>
+              <th class="sortable" onclick="sortClientes('dx')">D+X<span class="sort-ind" id="sort-ind-cli-dx"></span></th>
+              <th class="sortable" onclick="sortClientes('count')">Embalagens cadastradas<span class="sort-ind" id="sort-ind-cli-count"></span></th>
+              <th>--</th>
+            </tr></thead>
+            <tbody id="clientes-grid"></tbody>
+          </table>
+        </div>
+        <div id="clientes-empty" class="empty-state" style="display:none;"><div class="empty-icon">🏢</div><p>Nenhum cliente cadastrado</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMBALAGENS CATÁLOGO -->
+  <div id="tab-embalagens-cat" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Catálogo de Embalagens</div><div class="page-sub">Embalagens cadastradas por cliente</div></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" id="btn-nova-emb-cat" onclick="openModalEmbCat()">+ Nova Embalagem</button>
+        <button class="btn btn-secondary" id="btn-import-emb-cat" style="display:none" onclick="openModalImportEmb()">📥 Importar planilha</button>
+      </div>
+    </div>
+    <div id="embcat-no-access" class="access-denied" style="display:none;">
+      <div class="icon">🔒</div><p>Seu perfil não tem permissão para gerenciar embalagens.</p>
+    </div>
+    <div id="embcat-wrap">
+      <div class="filter-bar">
+        <div class="field"><label>FILTRAR POR CLIENTE</label>
+          <select id="filter-embcat-cli" onchange="renderEmbCat()">
+            <option value="">Todos os clientes</option>
+          </select>
+        </div>
+        <div class="field"><label>BUSCAR CÓDIGO / NOME</label><input type="text" id="filter-embcat-cod" placeholder="Código ou nome..." oninput="renderEmbCat()"></div>
+        <div class="field"><label>PERÍODO DE</label><input type="date" id="filter-embcat-data-ini" oninput="renderEmbCat()"></div>
+        <div class="field"><label>PERÍODO ATÉ</label><input type="date" id="filter-embcat-data-fim" oninput="renderEmbCat()"></div>
+        <div style="display:flex;align-items:flex-end;"><button class="btn btn-secondary btn-sm" onclick="limparFiltrosEmbCat()">✕ Limpar período</button></div>
+        <div style="display:flex;align-items:flex-end;">
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap;padding:10px 0;">
+            <input type="checkbox" id="filter-embcat-saldo" onchange="renderEmbCat()" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"> Ocultar itens sem saldo
+          </label>
+        </div>
+      </div>
+      <div class="export-bar">
+        <div class="count">Total recebido no período: <span id="embcat-total-periodo">0</span></div>
+      </div>
+      <div class="table-wrap">
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr>
+              <th class="sortable" onclick="sortEmbCat('codigo')">Embalagem<span class="sort-ind" id="sort-ind-codigo"></span></th>
+              <th class="sortable" onclick="sortEmbCat('cliente')">Cliente<span class="sort-ind" id="sort-ind-cliente"></span></th>
+              <th class="sortable" onclick="sortEmbCat('nomeInterno')">Nome interno<span class="sort-ind" id="sort-ind-nomeInterno"></span></th>
+              <th class="sortable" onclick="sortEmbCat('codDatasul')">Cód. Datasul<span class="sort-ind" id="sort-ind-codDatasul"></span></th>
+              <th class="sortable" onclick="sortEmbCat('qtdFardo')">Qtd/Fardo<span class="sort-ind" id="sort-ind-qtdFardo"></span></th>
+              <th class="sortable" onclick="sortEmbCat('valor')">Valor (R$)<span class="sort-ind" id="sort-ind-valor"></span></th>
+              <th class="sortable" onclick="sortEmbCat('ultimoRecebimento')">Último recebimento<span class="sort-ind" id="sort-ind-ultimoRecebimento"></span></th>
+              <th class="sortable" onclick="sortEmbCat('qtdRecebida')">Qtd. recebida<span class="sort-ind" id="sort-ind-qtdRecebida"></span></th>
+              <th class="sortable" onclick="sortEmbCat('recebidoPeriodo')">Recebido no período<span class="sort-ind" id="sort-ind-recebidoPeriodo"></span></th>
+              <th class="sortable col-vazias" id="th-col-vazias" style="display:none" onclick="sortEmbCat('vazias')">Saldo VAZIAS<span class="sort-ind" id="sort-ind-vazias"></span></th>
+              <th class="sortable col-cheias" id="th-col-cheias" style="display:none" onclick="sortEmbCat('cheias')">Saldo CHEIAS<span class="sort-ind" id="sort-ind-cheias"></span></th>
+              <th class="sortable col-total" id="th-col-total" style="display:none" onclick="sortEmbCat('total')">Saldo TOTAL<span class="sort-ind" id="sort-ind-total"></span></th>
+              <th>--</th>
+            </tr></thead>
+            <tbody id="embcat-grid"></tbody>
+          </table>
+        </div>
+        <div id="embcat-empty" class="empty-state" style="display:none;"><div class="empty-icon">📦</div><p>Nenhuma embalagem cadastrada</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BAIXA DE SALDO -->
+  <div id="tab-baixa" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Baixa de Saldo</div><div class="page-sub">Saldo disponível de embalagens por cliente</div></div>
+    </div>
+    <div class="filter-bar">
+      <div class="field"><label>FILTRAR POR CLIENTE</label>
+        <select id="filter-baixa-cli" onchange="renderBaixaSaldo()">
+          <option value="">Todos os clientes</option>
+        </select>
+      </div>
+      <div class="field"><label>BUSCAR CÓDIGO / NOME</label><input type="text" id="filter-baixa-cod" placeholder="Código ou nome..." oninput="renderBaixaSaldo()"></div>
+    </div>
+    <div class="table-wrap">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="sortBaixaSaldo('codigo')">Embalagem<span class="sort-ind" id="sort-ind-bx-codigo"></span></th>
+            <th class="sortable" onclick="sortBaixaSaldo('cliente')">Cliente<span class="sort-ind" id="sort-ind-bx-cliente"></span></th>
+            <th class="sortable col-vazias" onclick="sortBaixaSaldo('vazias')">Saldo Vazio<span class="sort-ind" id="sort-ind-bx-vazias"></span></th>
+            <th class="sortable col-cheias" onclick="sortBaixaSaldo('cheias')">Saldo Cheio<span class="sort-ind" id="sort-ind-bx-cheias"></span></th>
+            <th class="sortable col-total" onclick="sortBaixaSaldo('total')">Saldo Total<span class="sort-ind" id="sort-ind-bx-total"></span></th>
+            <th>--</th>
+          </tr></thead>
+          <tbody id="baixa-saldo-grid"></tbody>
+        </table>
+      </div>
+      <div id="baixa-saldo-empty" class="empty-state" style="display:none;"><div class="empty-icon">📦</div><p>Nenhuma embalagem cadastrada</p></div>
+    </div>
+  </div>
+
+  <!-- SOLICITAÇÕES -->
+  <div id="tab-solicitacoes" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Solicitações</div><div class="page-sub">Solicite e acompanhe a retirada de embalagens</div></div>
+    </div>
+
+    <div id="sol-no-access" class="access-denied" style="display:none;">
+      <div class="icon">🔒</div><p>Seu perfil não tem permissão para registrar solicitações.</p>
+    </div>
+    <div class="form-card" id="sol-form-wrap">
+      <div class="form-card-title">📋 Nova Solicitação</div>
+      <div class="form-grid">
+        <div class="field"><label>CLIENTE *</label>
+          <select id="sol-cli" onchange="onSolClienteChange()">
+            <option value="">— Selecione o cliente —</option>
+          </select>
+        </div>
+        <div class="field"><label>EMBALAGEM *</label>
+          <select id="sol-emb" disabled onchange="onSolEmbChange()">
+            <option value="">— Selecione o cliente —</option>
+          </select>
+        </div>
+        <div class="field"><label>SALDO DISPONÍVEL</label><input type="text" id="sol-saldo" readonly value="–"></div>
+        <div class="field"><label>QUANTIDADE *</label><input type="number" id="sol-qtd" min="1" placeholder="0"></div>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn btn-primary" id="btn-sol-salvar" onclick="salvarSolicitacao()">✓ Registrar Solicitação</button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="field"><label>FILTRAR POR CLIENTE</label>
+        <select id="filter-sol-cli" onchange="renderSolicitacoes()">
+          <option value="">Todos os clientes</option>
+        </select>
+      </div>
+      <div class="field"><label>FILTRAR POR STATUS</label>
+        <select id="filter-sol-status" onchange="renderSolicitacoes()">
+          <option value="">Todos</option>
+          <option value="PENDENTE">Pendente</option>
+          <option value="ATENDIDO">Atendido</option>
+          <option value="RECUSADO">Recusado</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="sortSolicitacoes('data')">Data/Hora<span class="sort-ind" id="sort-ind-sol-data"></span></th>
+            <th class="sortable" onclick="sortSolicitacoes('cliente')">Cliente<span class="sort-ind" id="sort-ind-sol-cliente"></span></th>
+            <th class="sortable" onclick="sortSolicitacoes('codigo')">Embalagem<span class="sort-ind" id="sort-ind-sol-codigo"></span></th>
+            <th class="sortable" onclick="sortSolicitacoes('qtdSol')">Qtd. Solicitada<span class="sort-ind" id="sort-ind-sol-qtdSol"></span></th>
+            <th class="sortable" onclick="sortSolicitacoes('qtdAt')">Qtd. Atendida<span class="sort-ind" id="sort-ind-sol-qtdAt"></span></th>
+            <th class="sortable" onclick="sortSolicitacoes('status')">Status<span class="sort-ind" id="sort-ind-sol-status"></span></th>
+            <th>--</th>
+          </tr></thead>
+          <tbody id="sol-grid"></tbody>
+        </table>
+      </div>
+      <div id="sol-empty" class="empty-state" style="display:none;"><div class="empty-icon">📋</div><p>Nenhuma solicitação registrada</p></div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="tab-admin" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Administração</div><div class="page-sub">Gerenciamento de usuários e permissões</div></div>
+    </div>
+    <div id="admin-gate-wrap">
+      <div class="admin-gate">
+        <div style="font-size:28px;margin-bottom:12px;">🔐</div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:6px;">Área restrita</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:24px;">Insira a senha de administrador.</div>
+        <div id="admin-error" class="error-msg"></div>
+        <div class="field"><label>SENHA</label>
+          <div class="pass-wrap"><input type="password" id="admin-pass-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPass()"><button class="pass-toggle" type="button" onclick="togglePass('admin-pass-input',this)">👁</button></div>
+        </div>
+        <button class="btn btn-primary" onclick="checkAdminPass()">Acessar</button>
+      </div>
+    </div>
+    <div id="admin-panel" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+        <div style="font-size:14px;color:var(--text2);">Painel de administração</div>
+        <button class="btn btn-danger btn-sm" onclick="lockAdmin()">🔒 Bloquear painel</button>
+      </div>
+      <div class="form-card" id="config-modulo-card" style="display:none;">
+        <div class="form-card-title">⚙ Módulos do sistema</div>
+        <div class="config-row">
+          <div>
+            <div class="config-row-title">Módulo de Estoque</div>
+            <div class="config-row-sub">Habilita as abas "Baixa de Saldo" e "Solicitações" na navegação para todos os usuários.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-modulo-estoque" onchange="toggleModuloEstoque(this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="form-card-title" style="margin-bottom:14px;">Usuários cadastrados</div>
+      <div id="users-list" class="users-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALHES REGISTRO -->
+<div id="modal-detail" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
+    <div class="modal-title">Detalhes do Registro</div>
+    <div class="detail-grid" id="modal-detail-content"></div>
+    <div id="modal-foto-section" style="display:none;">
+      <div style="font-size:11px;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;">Fotos</div>
+      <div class="foto-gallery" id="modal-fotos"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR -->
+<div id="modal-delete" class="modal-overlay">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-delete')">✕</button>
+    <div class="modal-title" style="color:var(--warn);">🗑 Excluir Registro</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.6;">Ação <strong style="color:var(--warn)">irreversível</strong>. Confirme com a senha de administrador:</div>
+    <div id="delete-error" class="error-msg"></div>
+    <div class="field"><label>SENHA DE ADMINISTRADOR</label>
+      <div class="pass-wrap"><input type="password" id="delete-pass-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')confirmDelete()"><button class="pass-toggle" type="button" onclick="togglePass('delete-pass-input',this)">👁</button></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-danger" style="flex:1" onclick="confirmDelete()">Confirmar Exclusão</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CLIENTE -->
+<div id="modal-cliente" class="modal-overlay">
+  <div class="modal" style="max-width:480px;">
+    <button class="modal-close" onclick="closeModal('modal-cliente')">✕</button>
+    <div class="modal-title" id="modal-cliente-title">Novo Cliente</div>
+    <div id="modal-cliente-error" class="error-msg"></div>
+    <div class="form-grid">
+      <div class="field full"><label>NOME DO CLIENTE *</label><input type="text" id="cli-nome" placeholder="Razão social / nome"></div>
+      <div class="field"><label>D+X (dias) *</label><input type="number" id="cli-dx" placeholder="Ex: 3" min="0"></div>
+      <div class="field full"><label>ÍCONE DO CLIENTE</label>
+        <div class="single-upload-zone" onclick="document.getElementById('cli-icon-input').click()">
+          <input type="file" id="cli-icon-input" accept="image/*" onchange="handleCliIcon(this)" style="display:none">
+          <img id="cli-icon-preview" class="icon-preview-img" style="display:none;">
+          <span class="su-placeholder" id="cli-icon-placeholder">📷 Selecionar ícone (opcional)</span>
+        </div>
+      </div>
+    </div>
+    <input type="hidden" id="cli-edit-id">
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-primary" style="flex:1" onclick="salvarCliente()">Salvar Cliente</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-cliente')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR CLIENTE -->
+<div id="modal-delete-cli" class="modal-overlay">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-delete-cli')">✕</button>
+    <div class="modal-title" style="color:var(--warn);">🗑 Excluir Cliente</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.6;">Isso também excluirá todas as embalagens vinculadas a este cliente. Confirme com a senha de administrador:</div>
+    <div id="delete-cli-error" class="error-msg"></div>
+    <div class="field"><label>SENHA DE ADMINISTRADOR</label>
+      <div class="pass-wrap"><input type="password" id="delete-cli-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')confirmDeleteCli()"><button class="pass-toggle" type="button" onclick="togglePass('delete-cli-pass',this)">👁</button></div>
+    </div>
+    <input type="hidden" id="delete-cli-id">
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-danger" style="flex:1" onclick="confirmDeleteCli()">Confirmar</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete-cli')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EMBALAGEM CATÁLOGO -->
+<div id="modal-emb-cat" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-emb-cat')">✕</button>
+    <div class="modal-title" id="modal-emb-cat-title">Nova Embalagem</div>
+    <div id="modal-emb-cat-error" class="error-msg"></div>
+    <div class="form-grid">
+      <div class="field full"><label>CLIENTE *</label>
+        <select id="emb-cat-cli">
+          <option value="">— Selecione o cliente —</option>
+        </select>
+      </div>
+      <div class="field"><label>CÓDIGO DA EMBALAGEM *</label><input type="text" id="emb-cat-cod" placeholder="Ex: EMB-001" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="field"><label>DESCRIÇÃO *</label><input type="text" id="emb-cat-desc" placeholder="Descrição da embalagem"></div>
+      <div class="field"><label>NOME INTERNO</label><input type="text" id="emb-cat-nome-int" placeholder="Nome interno"></div>
+      <div class="field"><label>CÓD. DATASUL</label><input type="number" id="emb-cat-datasul" placeholder="000000"></div>
+      <div class="field"><label>QTD. POR FARDO</label><input type="number" id="emb-cat-fardo" placeholder="0" min="0"></div>
+      <div class="field"><label>VALOR DA EMBALAGEM (R$)</label><input type="number" id="emb-cat-valor" placeholder="0,00" step="0.01" min="0"></div>
+      <div class="field full"><label>ITENS DA EMBALAGEM</label><textarea id="emb-cat-itens" placeholder="Descreva os itens contidos na embalagem…" rows="3"></textarea></div>
+      <div class="field full"><label>IMAGEM DE CAPA</label>
+        <div class="single-upload-zone" id="emb-cat-capa-zone" onclick="document.getElementById('emb-cat-capa-input').click()">
+          <input type="file" id="emb-cat-capa-input" accept="image/*" onchange="handleEmbCapa(this)" style="display:none">
+          <img id="emb-cat-capa-preview" class="capa-preview-img" style="display:none;">
+          <span class="su-placeholder" id="emb-cat-capa-placeholder">📷 Selecionar imagem de capa (opcional)</span>
+        </div>
+      </div>
+    </div>
+    <input type="hidden" id="emb-cat-edit-id">
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-primary" style="flex:1" onclick="salvarEmbCat()">Salvar Embalagem</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-emb-cat')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR EMB CAT -->
+<div id="modal-delete-emb" class="modal-overlay">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-delete-emb')">✕</button>
+    <div class="modal-title" style="color:var(--warn);">🗑 Excluir Embalagem</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.6;">Confirme com a senha de administrador:</div>
+    <div id="delete-emb-error" class="error-msg"></div>
+    <div class="field"><label>SENHA DE ADMINISTRADOR</label>
+      <div class="pass-wrap"><input type="password" id="delete-emb-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')confirmDeleteEmb()"><button class="pass-toggle" type="button" onclick="togglePass('delete-emb-pass',this)">👁</button></div>
+    </div>
+    <input type="hidden" id="delete-emb-id">
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-danger" style="flex:1" onclick="confirmDeleteEmb()">Confirmar</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete-emb')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR PLANILHA DE EMBALAGENS -->
+<div id="modal-import-emb" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-import-emb')">✕</button>
+    <div class="modal-title">📥 Importar planilha de embalagens</div>
+    <div id="modal-import-emb-error" class="error-msg"></div>
+    <div id="modal-import-emb-success" class="success-msg"></div>
+    <div class="field"><label>CLIENTE *</label>
+      <select id="import-emb-cli">
+        <option value="">— Selecione o cliente —</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ARQUIVO EXCEL (.xlsx / .xls)</label>
+      <div class="single-upload-zone" id="import-emb-zone" onclick="document.getElementById('import-emb-file').click()">
+        <input type="file" id="import-emb-file" accept=".xlsx,.xls" onchange="handleImportEmbFile(this)" style="display:none">
+        <span class="su-placeholder" id="import-emb-file-label">📄 Selecionar arquivo…</span>
+      </div>
+    </div>
+    <div style="color:var(--text2);font-size:12px;line-height:1.6;margin-top:4px;">
+      A planilha deve conter as colunas nesta ordem, a partir da 2ª linha (a 1ª é o cabeçalho):<br>
+      <span style="font-family:var(--font-mono);color:var(--text3)">CÓDIGO DA EMBALAGEM · DESCRIÇÃO · NOME INTERNO · CÓD DATASUL · QUANT POR FARDO · VALOR DA EMBALAGEM · ITENS DA EMBALAGEM</span><br>
+      Colunas vazias serão consideradas como 0. Embalagens com o mesmo código já cadastradas para o cliente selecionado serão atualizadas; as demais serão criadas.
+    </div>
+    <div id="import-emb-summary" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:14px;font-size:13px;color:var(--text2);"></div>
+    <input type="hidden" id="import-emb-edit-id">
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-primary" style="flex:1" id="btn-processar-import-emb" onclick="processarImportEmb()" disabled>Processar planilha</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-import-emb')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BAIXA DE SALDO -->
+<div id="modal-baixa" class="modal-overlay">
+  <div class="modal" style="max-width:460px;">
+    <button class="modal-close" onclick="closeModal('modal-baixa')">✕</button>
+    <div class="modal-title">📉 Realizar Baixa de Saldo</div>
+    <div id="modal-baixa-error" class="error-msg"></div>
+    <div class="detail-grid" style="margin-bottom:16px;">
+      <div class="detail-item"><label>CLIENTE</label><span id="baixa-info-cliente">–</span></div>
+      <div class="detail-item"><label>EMBALAGEM</label><span id="baixa-info-embalagem">–</span></div>
+      <div class="detail-item"><label>SALDO VAZIO</label><span id="baixa-info-saldo-vazio" style="font-family:var(--font-mono);color:#60a5fa">0</span></div>
+      <div class="detail-item"><label>SALDO CHEIO</label><span id="baixa-info-saldo-cheio" style="font-family:var(--font-mono);color:var(--accent)">0</span></div>
+      <div class="detail-item" style="grid-column:1/-1"><label>DATA / HORA <span style="color:var(--accent);font-size:10px">AUTO</span></label><span id="baixa-info-data">–</span></div>
+    </div>
+    <div class="field"><label>USUÁRIO <span style="color:var(--accent);font-size:10px">AUTO</span></label><input type="text" id="baixa-usuario" readonly></div>
+    <div class="form-grid">
+      <div class="field"><label>QTD. VAZIAS A BAIXAR</label><input type="number" id="baixa-qtd-vazias" min="0" placeholder="0"></div>
+      <div class="field"><label>QTD. CHEIAS A BAIXAR</label><input type="number" id="baixa-qtd-cheias" min="0" placeholder="0"></div>
+    </div>
+    <div class="field"><label>MOTIVO / OBSERVAÇÃO</label><textarea id="baixa-obs" rows="2" placeholder="Opcional…"></textarea></div>
+    <input type="hidden" id="baixa-cli-id">
+    <input type="hidden" id="baixa-codigo">
+    <input type="hidden" id="baixa-emb-cat-id">
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-primary" style="flex:1" id="btn-confirmar-baixa" onclick="confirmarBaixa()">Confirmar Baixa</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-baixa')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ATENDER SOLICITAÇÃO -->
+<div id="modal-atender" class="modal-overlay">
+  <div class="modal" style="max-width:460px;">
+    <button class="modal-close" onclick="closeModal('modal-atender')">✕</button>
+    <div class="modal-title">✅ Atender Solicitação</div>
+    <div id="modal-atender-error" class="error-msg"></div>
+    <div class="detail-grid" style="margin-bottom:16px;">
+      <div class="detail-item"><label>CLIENTE</label><span id="atender-info-cliente">–</span></div>
+      <div class="detail-item"><label>EMBALAGEM</label><span id="atender-info-embalagem">–</span></div>
+      <div class="detail-item"><label>QTD. SOLICITADA</label><span id="atender-info-qtd-sol">0</span></div>
+      <div class="detail-item"><label>SALDO DISPONÍVEL</label><span id="atender-info-saldo" style="font-family:var(--font-mono);color:var(--accent)">0</span></div>
+    </div>
+    <div class="field"><label>USUÁRIO <span style="color:var(--accent);font-size:10px">AUTO</span></label><input type="text" id="atender-usuario" readonly></div>
+    <div class="field"><label>QUANTIDADE ENTREGUE *</label><input type="number" id="atender-qtd" min="1" placeholder="0"></div>
+    <input type="hidden" id="atender-sol-id">
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-primary" style="flex:1" id="btn-confirmar-atender" onclick="confirmarAtender()">Confirmar Atendimento</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-atender')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RECUSAR SOLICITAÇÃO -->
+<div id="modal-recusar" class="modal-overlay">
+  <div class="modal" style="max-width:460px;">
+    <button class="modal-close" onclick="closeModal('modal-recusar')">✕</button>
+    <div class="modal-title" style="color:var(--warn);">✕ Recusar Solicitação</div>
+    <div id="modal-recusar-error" class="error-msg"></div>
+    <div class="detail-grid" style="margin-bottom:16px;">
+      <div class="detail-item"><label>CLIENTE</label><span id="recusar-info-cliente">–</span></div>
+      <div class="detail-item"><label>EMBALAGEM</label><span id="recusar-info-embalagem">–</span></div>
+      <div class="detail-item"><label>QTD. SOLICITADA</label><span id="recusar-info-qtd-sol">0</span></div>
+    </div>
+    <div class="field"><label>MOTIVO DA RECUSA *</label><textarea id="recusar-motivo" rows="3" placeholder="Descreva o motivo da recusa…"></textarea></div>
+    <input type="hidden" id="recusar-sol-id">
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-danger" style="flex:1" id="btn-confirmar-recusar" onclick="confirmarRecusar()">Confirmar Recusa</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-recusar')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALHES SOLICITAÇÃO -->
+<div id="modal-sol-detail" class="modal-overlay">
+  <div class="modal" style="max-width:480px;">
+    <button class="modal-close" onclick="closeModal('modal-sol-detail')">✕</button>
+    <div class="modal-title">Detalhes da Solicitação</div>
+    <div class="detail-grid" id="modal-sol-detail-content"></div>
+  </div>
+</div>
+
+<!-- IMG VIEWER -->
+<div id="img-viewer">
+  <button id="img-viewer-close" onclick="closeImgViewer()">✕ Fechar</button>
+  <img id="img-viewer-img" src="" alt="">
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, updateDoc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAmX8gVADeGgS9SFBdN18Y1MmVwzIlC2tE",
+  authDomain: "embalagens-19e30.firebaseapp.com",
+  projectId: "embalagens-19e30",
+  storageBucket: "embalagens-19e30.firebasestorage.app",
+  messagingSenderId: "202746410182",
+  appId: "1:202746410182:web:5275f53f8fe0db3a2b93c7",
+  measurementId: "G-B7DBN6DGGT"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
+const ADMIN_PASS = 'Log#001';
+
+// ROLES: visualizador | operador | administrador
+const ROLE_LABELS = { visualizador:'Visualizador', operador:'Operador', administrador:'Administrador' };
+
+window._registros   = [];
+window._clientes    = [];
+window._embCat      = [];
+window._baixas      = [];
+window._solicitacoes = [];
+window._fotos       = [];
+window._currentUser = null;
+window._userRole    = 'visualizador';
+window._pendingDeleteId = null;
+window._moduloEstoqueAtivo = false;
+
+window._baixaSort = { field: 'codigo', asc: true };
+
+// ── AUTH STATE ────────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+  document.getElementById('loading-screen').style.display = 'none';
+  if (user) {
+    window._currentUser = user;
+    // Load user role from Firestore
+    try {
+      const snap = await getDocs(query(collection(db,'usuarios'), where('uid','==',user.uid)));
+      if (!snap.empty) {
+        const ud = snap.docs[0].data();
+        window._userRole = ud.perfil || 'operador';
+        if (ud.ativo === false) { await signOut(auth); showAuthErr('Sua conta está bloqueada. Contate o administrador.'); return; }
+      } else {
+        window._userRole = 'operador';
+      }
+    } catch(e) { window._userRole = 'operador'; }
+
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('topbar-name').textContent = user.displayName || user.email;
+    const roleEl = document.getElementById('topbar-role');
+    roleEl.textContent = ROLE_LABELS[window._userRole] || window._userRole;
+    roleEl.className = `role-tag role-${window._userRole}`;
+    document.getElementById('f-user').value = user.displayName || user.email;
+    applyRoleUI();
+    initDatetime();
+    await Promise.all([loadClientes(), loadEmbCat(), loadRegistros(), loadConfiguracoes(), loadBaixas(), loadSolicitacoes()]);
+    addEmbRow();
+  } else {
+    window._currentUser = null;
+    window._registros = []; window._clientes = []; window._embCat = [];
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+});
+
+function applyRoleUI() {
+  const r = window._userRole;
+  const canWrite = r === 'operador' || r === 'administrador';
+  const canAdmin = r === 'administrador';
+
+  // Registro tab
+  document.getElementById('reg-no-access').style.display = canWrite ? 'none' : 'block';
+  document.getElementById('reg-form-wrap').style.display = canWrite ? 'block' : 'none';
+
+  // Solicitações tab
+  const solNoAccess = document.getElementById('sol-no-access');
+  const solFormWrap = document.getElementById('sol-form-wrap');
+  if (solNoAccess) solNoAccess.style.display = canWrite ? 'none' : 'block';
+  if (solFormWrap) solFormWrap.style.display = canWrite ? 'block' : 'none';
+
+  // Clientes tab
+  document.getElementById('btn-novo-cliente').style.display = canWrite ? 'inline-flex' : 'none';
+
+  // EmbCat tab
+  document.getElementById('btn-nova-emb-cat').style.display = canWrite ? 'inline-flex' : 'none';
+  document.getElementById('btn-import-emb-cat').style.display = canAdmin ? 'inline-flex' : 'none';
+
+  // Config de módulos (Adm) — visível apenas para administrador
+  const cfgCard = document.getElementById('config-modulo-card');
+  if (cfgCard) cfgCard.style.display = canAdmin ? 'block' : 'none';
+}
+
+// ── AUTH FUNCTIONS ─────────────────────────────────────
+window.doLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  clearAuthMsgs();
+  if (!email || !pass) { showAuthErr('Preencha e-mail e senha.'); return; }
+  try { await signInWithEmailAndPassword(auth, email, pass); }
+  catch(e) {
+    const m={'auth/invalid-credential':'E-mail ou senha incorretos.','auth/user-not-found':'Usuário não encontrado.','auth/wrong-password':'Senha incorreta.','auth/too-many-requests':'Muitas tentativas. Aguarde.'};
+    showAuthErr(m[e.code]||'Erro: '+e.message);
+  }
+};
+
+window.doRegister = async () => {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  clearAuthMsgs();
+  if (!name)        { showAuthErr('Informe seu nome completo.'); return; }
+  if (!email)       { showAuthErr('Informe o e-mail.'); return; }
+  if (pass.length<6){ showAuthErr('Senha deve ter no mínimo 6 caracteres.'); return; }
+  if (pass !== pass2){ showAuthErr('As senhas não coincidem.'); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+    await addDoc(collection(db,'usuarios'), { uid:cred.user.uid, nome:name, email:email, ativo:true, perfil:'operador', criadoEm:serverTimestamp() });
+    showToast('✓ Conta criada! Bem-vindo(a), '+name+'.');
+  } catch(e) {
+    const m={'auth/email-already-in-use':'E-mail já cadastrado.','auth/invalid-email':'E-mail inválido.','auth/weak-password':'Senha muito fraca.'};
+    showAuthErr(m[e.code]||'Erro: '+e.message);
+  }
+};
+
+window.doForgot = async () => {
+  const email = document.getElementById('forgot-email').value.trim();
+  clearAuthMsgs();
+  if (!email) { showAuthErr('Informe o e-mail cadastrado.'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    document.getElementById('auth-success').style.display = 'block';
+    document.getElementById('auth-success').textContent = '✓ Link de recuperação enviado para '+email+'. Verifique sua caixa de entrada.';
+  } catch(e) {
+    const m={'auth/user-not-found':'E-mail não encontrado.','auth/invalid-email':'E-mail inválido.'};
+    showAuthErr(m[e.code]||'Erro: '+e.message);
+  }
+};
+
+window.doLogout = async () => { await signOut(auth); };
+
+window.switchAuthTab = (tab) => {
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  clearAuthMsgs();
+  ['login-form','register-form','forgot-form'].forEach(id=>document.getElementById(id).style.display='none');
+  const tabs = ['login','register','forgot'];
+  document.getElementById(tab+'-form').style.display = 'block';
+  document.querySelectorAll('.auth-tab')[tabs.indexOf(tab)].classList.add('active');
+  const subs = {login:'Faça login para continuar',register:'Crie sua conta',forgot:'Recuperar senha'};
+  document.getElementById('auth-sub-text').textContent = subs[tab];
+};
+
+window.togglePass = (inputId, btn) => {
+  const el = document.getElementById(inputId);
+  if (el.type==='password') { el.type='text'; btn.textContent='🙈'; }
+  else { el.type='password'; btn.textContent='👁'; }
+};
+
+function clearAuthMsgs() { document.getElementById('auth-error').style.display='none'; document.getElementById('auth-success').style.display='none'; }
+function showAuthErr(msg) { const e=document.getElementById('auth-error'); e.style.display='block'; e.textContent=msg; }
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatDt(d){ if(!d) return '–'; const date = (d instanceof Date) ? d : new Date(d); return isNaN(date.getTime()) ? String(d) : date.toLocaleString('pt-BR'); }
+function showToast(msg, isErr=false){
+  const t = document.getElementById('toast');
+  if(!t) return;
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' error' : '');
+  setTimeout(()=> t.className='toast', 3000);
+}
+function showErr(el, msg){ if(!el) return; el.textContent = msg; el.style.display = 'block'; }
+window.closeModal = (id) => { const el = document.getElementById(id); if(el) el.classList.remove('open'); };
+
+function getRecebidoNoPeriodo(emb, dtIni, dtFim){
+  let total = 0;
+  for(const r of (window._registros||[])){
+    if(!r.itens) continue;
+    for(const item of r.itens){
+      if(item.clienteId === emb.clienteId && item.codigo === emb.codigo){
+        total += Number(item.qtd) || 0;
+      }
+    }
+  }
+  return total;
+}
+
+// ── SALDO DE EMBALAGENS (Entradas - Baixas - Solicitações Atendidas) ──
+function getTotalEntradas(emb){
+  return getRecebidoNoPeriodo(emb, '', ''); // sem filtro de período = soma total de entradas
+}
+// baixas registradas como VAZIAS (compatível com baixas antigas, que só tinham "qtd" e eram sempre de vazias)
+function getTotalBaixasVazias(emb){
+  let total = 0;
+  for(const b of (window._baixas||[])){
+    if(b.codigo!==emb.codigo || b.clienteId!==emb.clienteId) continue;
+    if(b.qtdVazias!=null || b.qtdCheias!=null) total += Number(b.qtdVazias)||0;
+    else total += Number(b.qtd)||0; // registro antigo, anterior à separação vazias/cheias
+  }
+  return total;
+}
+// baixas registradas como CHEIAS
+function getTotalBaixasCheias(emb){
+  let total = 0;
+  for(const b of (window._baixas||[])){
+    if(b.codigo===emb.codigo && b.clienteId===emb.clienteId) total += Number(b.qtdCheias)||0;
+  }
+  return total;
+}
+function getTotalSolicitacoesAtendidas(emb){
+  let total = 0;
+  for(const s of (window._solicitacoes||[])){
+    if(s.status==='ATENDIDO' && s.codigo===emb.codigo && s.clienteId===emb.clienteId) total += Number(s.qtdAtendida)||0;
+  }
+  return total;
+}
+// Saldo VAZIAS: entradas (+Registro) menos baixas de vazias menos o que já foi transferido para CHEIAS via atendimento
+function getSaldoVazias(emb){
+  return Math.max(0, getTotalEntradas(emb) - getTotalBaixasVazias(emb) - getTotalSolicitacoesAtendidas(emb));
+}
+// Saldo CHEIAS: solicitações atendidas menos baixas de cheias
+function getSaldoCheias(emb){
+  return Math.max(0, getTotalSolicitacoesAtendidas(emb) - getTotalBaixasCheias(emb));
+}
+// Saldo TOTAL = Cheias + Vazias
+function getSaldoTotal(emb){
+  return getSaldoVazias(emb) + getSaldoCheias(emb);
+}
+// Mantido por compatibilidade — saldo disponível para solicitar é o saldo de VAZIAS
+function getSaldoDisponivel(emb){
+  return getSaldoVazias(emb);
+}
+
+function genericSort(data, sortObj, getValFn){
+  return data.sort((a,b)=>{
+    let va = getValFn(a);
+    let vb = getValFn(b);
+    if(typeof va === 'string') va = va.toLowerCase();
+    if(typeof vb === 'string') vb = vb.toLowerCase();
+    if(va < vb) return sortObj.asc ? -1 : 1;
+    if(va > vb) return sortObj.asc ? 1 : -1;
+    return 0;
+  });
+}
+
+function applySortIndicator(prefix, sortObj, fields){
+  fields.forEach(f => {
+    const el = document.getElementById(`sort-ind-${prefix}-${f}`);
+    if(el){
+      if(sortObj.field === f){
+        el.textContent = sortObj.asc ? ' ▲' : ' ▼';
+      } else {
+        el.textContent = '';
+      }
+    }
+  });
+}
+
+window.sortBaixaSaldo = (field) => {
+  if(window._baixaSort.field === field){
+    window._baixaSort.asc = !window._baixaSort.asc;
+  } else {
+    window._baixaSort.field = field;
+    window._baixaSort.asc = true;
+  }
+  window.renderBaixaSaldo();
+};
+
+window.renderBaixaSaldo = () => {
+  const grid = document.getElementById('baixa-saldo-grid');
+  if(!grid) return;
+  const fc = document.getElementById('filter-baixa-cli')?.value||'';
+  const fk = (document.getElementById('filter-baixa-cod')?.value||'').toLowerCase();
+  let data = window._embCat.filter(e=>{
+    if(fc && e.clienteId!==fc) return false;
+    if(fk && !e.codigo?.toLowerCase().includes(fk) && !e.nomeInterno?.toLowerCase().includes(fk) && !e.descricao?.toLowerCase().includes(fk)) return false;
+    return true;
+  });
+  const empty = document.getElementById('baixa-saldo-empty');
+  if(!data.length){grid.innerHTML='';empty.style.display='block';applySortIndicator('bx', window._baixaSort, ['codigo','cliente','vazias','cheias','total']);return;}
+  empty.style.display='none';
+  const canWrite = ['operador','administrador'].includes(window._userRole);
+  const bxGetVal = (e)=>{
+    const cli = window._clientes.find(c=>c.id===e.clienteId);
+    switch(window._baixaSort.field){
+      case 'codigo': return (e.codigo||'').toLowerCase();
+      case 'cliente': return (cli?.nome||'').toLowerCase();
+      case 'vazias': return getSaldoVazias(e);
+      case 'cheias': return getSaldoCheias(e);
+      case 'total': return getSaldoTotal(e);
+      default: return '';
+    }
+  };
+  data = genericSort(data, window._baixaSort, bxGetVal);
+  applySortIndicator('bx', window._baixaSort, ['codigo','cliente','vazias','cheias','total']);
+  grid.innerHTML = data.map(e=>{
+    const cli = window._clientes.find(c=>c.id===e.clienteId);
+    const vazias = getSaldoVazias(e);
+    const cheias = getSaldoCheias(e);
+    const total  = vazias + cheias;
+    return `<tr>
+      <td><div style="font-family:var(--font-mono);font-size:13px">${esc(e.codigo)}</div><div style="font-size:12px;color:var(--text2)">${esc(e.descricao||'–')}</div></td>
+      <td style="color:var(--accent)">${esc(cli?.nome||'–')}</td>
+      <td class="col-vazias" style="font-family:var(--font-mono);font-weight:700">${vazias}</td>
+      <td class="col-cheias" style="font-family:var(--font-mono);font-weight:700">${cheias}</td>
+      <td class="col-total" style="font-family:var(--font-mono);font-weight:700;color:${total>0?'var(--accent)':'var(--text2)'}">${total}</td>
+      <td>${canWrite?`<button class="btn btn-secondary btn-sm" onclick="openModalBaixa('${e.id}')" ${total<=0?'disabled title="Sem saldo disponível para baixa"':''}>📉 Realizar Baixa</button>`:''}</td>
+    </tr>`;
+  }).join('');
+};
+
+window.openModalBaixa = (embCatId) => {
+  const e = window._embCat.find(x=>x.id===embCatId); if(!e) return;
+  const saldoVazio = getSaldoVazias(e);
+  const saldoCheio = getSaldoCheias(e);
+  if(saldoVazio<=0 && saldoCheio<=0){ showToast('⚠ Sem saldo disponível para baixa.', true); return; }
+  const cli = window._clientes.find(c=>c.id===e.clienteId);
+  document.getElementById('modal-baixa-error').style.display='none';
+  document.getElementById('baixa-info-cliente').textContent = cli?.nome||'–';
+  document.getElementById('baixa-info-embalagem').textContent = `${e.codigo} – ${e.descricao||''}`;
+  document.getElementById('baixa-info-saldo-vazio').textContent = saldoVazio;
+  document.getElementById('baixa-info-saldo-cheio').textContent = saldoCheio;
+  document.getElementById('baixa-info-data').textContent = formatDt(new Date());
+  document.getElementById('baixa-usuario').value = window._currentUser?.displayName || window._currentUser?.email || '';
+  document.getElementById('baixa-qtd-vazias').value = '';
+  document.getElementById('baixa-qtd-vazias').max = saldoVazio;
+  document.getElementById('baixa-qtd-cheias').value = '';
+  document.getElementById('baixa-qtd-cheias').max = saldoCheio;
+  document.getElementById('baixa-obs').value = '';
+  document.getElementById('baixa-cli-id').value = e.clienteId;
+  document.getElementById('baixa-codigo').value = e.codigo;
+  document.getElementById('baixa-emb-cat-id').value = e.id;
+  document.getElementById('modal-baixa').classList.add('open');
+};
+
+window.confirmarBaixa = async () => {
+  if(!['operador','administrador'].includes(window._userRole)){ showToast('Sem permissão.', true); return; }
+  const errEl = document.getElementById('modal-baixa-error');
+  errEl.style.display='none';
+  const embCatId   = document.getElementById('baixa-emb-cat-id').value;
+  const clienteId = document.getElementById('baixa-cli-id').value;
+  const codigo    = document.getElementById('baixa-codigo').value;
+  const qtdVaziasRaw = document.getElementById('baixa-qtd-vazias').value.trim();
+  const qtdCheiasRaw = document.getElementById('baixa-qtd-cheias').value.trim();
+  const obs       = document.getElementById('baixa-obs').value.trim();
+  const e = window._embCat.find(x=>x.id===embCatId);
+  if(!e){ showErr(errEl,'Embalagem não encontrada.'); return; }
+
+  const qtdVazias = qtdVaziasRaw ? Number(qtdVaziasRaw) : 0;
+  const qtdCheias = qtdCheiasRaw ? Number(qtdCheiasRaw) : 0;
+  if((qtdVaziasRaw && (isNaN(qtdVazias)||qtdVazias<0)) || (qtdCheiasRaw && (isNaN(qtdCheias)||qtdCheias<0))){
+    showErr(errEl,'Informe quantidades válidas.'); return;
+  }
+  if(qtdVazias<=0 && qtdCheias<=0){ showErr(errEl,'Informe ao menos uma quantidade a baixar (Vazias ou Cheias).'); return; }
+
+  // revalida o saldo no momento da confirmação, usando os dados mais recentes em memória
+  const saldoVazioAtual = getSaldoVazias(e);
+  const saldoCheioAtual = getSaldoCheias(e);
+  if(qtdVazias > saldoVazioAtual){ showErr(errEl, `Quantidade de Vazias maior que o saldo disponível (${saldoVazioAtual}).`); return; }
+  if(qtdCheias > saldoCheioAtual){ showErr(errEl, `Quantidade de Cheias maior que o saldo disponível (${saldoCheioAtual}).`); return; }
+
+  const cli = window._clientes.find(c=>c.id===clienteId);
+  const btn = document.getElementById('btn-confirmar-baixa');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try{
+    const dataHora = formatDt(new Date());
+    const registro = {
+      dataHora, timestamp: serverTimestamp(),
+      usuario: window._currentUser.displayName || window._currentUser.email,
+      uid: window._currentUser.uid,
+      clienteId, clienteNome: cli?.nome||'', codigo,
+      qtdVazias, qtdCheias, obs
+    };
+    await addDoc(collection(db,'baixas_embalagens'), registro);
+    window._baixas.unshift({ ...registro, timestamp:new Date() });
+    showToast('✓ Baixa registrada!');
+    closeModal('modal-baixa');
+    renderBaixaSaldo();
+    if(document.getElementById('tab-embalagens-cat')?.classList.contains('active')) renderEmbCat();
+  }catch(err){
+    showErr(errEl, 'Erro: '+(err.code||err.message));
+  }finally{
+    btn.disabled=false; btn.textContent='Confirmar Baixa';
+  }
+};
+
+async function loadClientes(){
+  try{
+    const snap = await getDocs(collection(db,'clientes'));
+    window._clientes = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  }catch(e){ console.error(e); }
+}
+async function loadEmbCat(){
+  try{
+    const snap = await getDocs(collection(db,'embalagens_catalogo'));
+    window._embCat = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  }catch(e){ console.error(e); }
+}
+async function loadRegistros(){
+  try{
+    const snap = await getDocs(query(collection(db,'registros_embalagens'), orderBy('timestamp','desc')));
+    window._registros = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  }catch(e){ console.error(e); }
+}
+async function loadBaixas(){
+  try{
+    const snap = await getDocs(query(collection(db,'baixas_embalagens'), orderBy('timestamp','desc')));
+    window._baixas = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  }catch(e){ console.error(e); }
+}
+async function loadSolicitacoes(){
+  try{
+    const snap = await getDocs(query(collection(db,'solicitacoes_embalagens'), orderBy('timestamp','desc')));
+    window._solicitacoes = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  }catch(e){ console.error(e); }
+}
+async function loadConfiguracoes(){
+  try{
+    const snap = await getDocs(collection(db,'configuracoes'));
+    snap.forEach(docSnap => {
+      if(docSnap.id === 'modulos'){
+        const data = docSnap.data();
+        window._moduloEstoqueAtivo = !!data.estoque;
+        const btnBx = document.getElementById('nav-baixa');
+        const btnSol = document.getElementById('nav-solicitacoes');
+        if(btnBx) btnBx.style.display = window._moduloEstoqueAtivo ? 'inline-block' : 'none';
+        if(btnSol) btnSol.style.display = window._moduloEstoqueAtivo ? 'inline-block' : 'none';
+      }
+    });
+  }catch(e){ console.error(e); }
+}
+
+function initDatetime(){
+  const el = document.getElementById('f-datetime');
+  if(el) el.value = formatDt(new Date());
+}
+
+window.switchTab = (tabId) => {
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const btn = document.getElementById('nav-'+tabId);
+  const page = document.getElementById('tab-'+tabId);
+  if(btn) btn.classList.add('active');
+  if(page) page.classList.add('active');
+  if(tabId === 'baixa') renderBaixaSaldo();
+};
+
+window.addEmbRow = () => {};
+window.salvarRegistro = () => {};
+window.limparForm = () => {};
+window.renderTabela = () => {};
+window.renderClientes = () => {};
+window.renderEmbCat = () => {};
+window.renderSolicitacoes = () => {};
+</script>
+</body>
+</html>
