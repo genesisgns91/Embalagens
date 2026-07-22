@@ -164,6 +164,16 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 .table-solicitacoes th:nth-child(5),.table-solicitacoes td:nth-child(5){width:10%;}
 .table-solicitacoes th:nth-child(6),.table-solicitacoes td:nth-child(6){width:10%;}
 .table-solicitacoes th:nth-child(7),.table-solicitacoes td:nth-child(7){width:18%;}
+
+/* CATÁLOGO DE EMBALAGENS — colunas compactas para evitar scroll horizontal */
+.table-embcat{table-layout:auto;width:100%;}
+.table-embcat th{white-space:normal;line-height:1.3;vertical-align:bottom;padding:9px 10px;}
+.table-embcat td{padding:9px 10px;}
+.table-embcat th:nth-child(4),.table-embcat td:nth-child(4),
+.table-embcat th:nth-child(5),.table-embcat td:nth-child(5),
+.table-embcat th:nth-child(6),.table-embcat td:nth-child(6){font-size:11px;padding-left:8px;padding-right:8px;max-width:76px;}
+.table-embcat th:nth-child(9),.table-embcat td:nth-child(9){white-space:normal;max-width:100px;}
+.table-embcat th.col-receb-a,.table-embcat th.col-receb-b{white-space:normal;max-width:110px;}
 .empty-state{padding:48px;text-align:center;color:var(--text3);}
 .empty-state .empty-icon{font-size:32px;margin-bottom:12px;}
 
@@ -475,7 +485,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
       </div>
       <div class="table-wrap">
         <div style="overflow-x:auto;">
-          <table>
+          <table class="table-embcat">
             <thead><tr>
               <th class="sortable" onclick="sortEmbCat('codigo')">Embalagem<span class="sort-ind" id="sort-ind-codigo"></span></th>
               <th class="sortable" onclick="sortEmbCat('cliente')">Cliente<span class="sort-ind" id="sort-ind-cliente"></span></th>
@@ -718,6 +728,33 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     <div style="display:flex;gap:10px;margin-top:4px;">
       <button class="btn btn-danger" style="flex:1" onclick="confirmDeleteCli()">Confirmar</button>
       <button class="btn btn-secondary" onclick="closeModal('modal-delete-cli')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EMBALAGENS DO CLIENTE -->
+<div id="modal-cliente-embalagens" class="modal-overlay">
+  <div class="modal" style="max-width:760px;">
+    <button class="modal-close" onclick="closeModal('modal-cliente-embalagens')">✕</button>
+    <div class="modal-title">📦 Embalagens do Cliente</div>
+    <div class="detail-grid" style="margin-bottom:18px;">
+      <div class="detail-item"><label>CLIENTE</label><span id="cliemb-info-cliente">–</span></div>
+    </div>
+    <div class="table-wrap">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th>Embalagem</th>
+            <th>Descrição</th>
+            <th>Nome Interno</th>
+            <th class="col-vazias" id="th-cliemb-vazias" style="display:none">Saldo VAZIAS</th>
+            <th class="col-cheias" id="th-cliemb-cheias" style="display:none">Saldo CHEIAS</th>
+            <th class="col-total" id="th-cliemb-total" style="display:none">Saldo TOTAL</th>
+          </tr></thead>
+          <tbody id="cliemb-grid"></tbody>
+        </table>
+      </div>
+      <div id="cliemb-empty" class="empty-state" style="display:none;"><div class="empty-icon">📦</div><p>Nenhuma embalagem cadastrada para este cliente</p></div>
     </div>
   </div>
 </div>
@@ -1129,6 +1166,7 @@ function applyModuloEstoqueUI() {
     if (activePage && (activePage.id === 'tab-baixa' || activePage.id === 'tab-solicitacoes')) switchTab('registro');
   }
   if (document.getElementById('embcat-grid')) renderEmbCat();
+  if (document.getElementById('modal-cliente-embalagens')?.classList.contains('open')) renderClienteEmbalagensModal();
 }
 
 window.toggleModuloEstoque = async (checked) => {
@@ -1205,13 +1243,13 @@ window.renderClientes = () => {
   const canWrite = ['operador','administrador'].includes(window._userRole);
   const canDel   = window._userRole === 'administrador';
   grid.innerHTML = data.map(c=>`
-    <tr>
+    <tr style="cursor:pointer" onclick="openModalClienteEmbalagens('${c.id}')" title="Ver embalagens deste cliente">
       <td><div class="name-cell">${c.icone?`<img src="${c.icone}" class="list-thumb" alt="">`:`<div class="list-thumb-placeholder">🏢</div>`}<span>${esc(c.nome)}</span></div></td>
       <td>D+${c.dx||0} dias</td>
       <td>${window._embCat.filter(e=>e.clienteId===c.id).length}</td>
       <td style="white-space:nowrap">
-        ${canWrite?`<button class="btn btn-secondary btn-sm btn-icon" style="margin-right:4px" onclick="openModalCliente('${c.id}')" title="Editar">✏️</button>`:''}
-        ${canDel?`<button class="btn btn-danger btn-sm btn-icon" onclick="askDeleteCli('${c.id}')" title="Excluir">🗑</button>`:''}
+        ${canWrite?`<button class="btn btn-secondary btn-sm btn-icon" style="margin-right:4px" onclick="event.stopPropagation();openModalCliente('${c.id}')" title="Editar">✏️</button>`:''}
+        ${canDel?`<button class="btn btn-danger btn-sm btn-icon" onclick="event.stopPropagation();askDeleteCli('${c.id}')" title="Excluir">🗑</button>`:''}
       </td>
     </tr>`).join('');
 };
@@ -1294,6 +1332,49 @@ window.confirmDeleteCli = async () => {
     showToast('✓ Cliente excluído.');
   } catch(e){showErr(errEl,'Erro: '+e.message);}
 };
+
+// ── EMBALAGENS DO CLIENTE (modal de detalhes a partir do Cadastro de Clientes) ──
+window._cliEmbCurrentId = null;
+
+window.openModalClienteEmbalagens = (clienteId) => {
+  const cli = window._clientes.find(c=>c.id===clienteId); if(!cli) return;
+  document.getElementById('cliemb-info-cliente').textContent = cli.nome||'–';
+  window._cliEmbCurrentId = clienteId;
+  renderClienteEmbalagensModal();
+  document.getElementById('modal-cliente-embalagens').classList.add('open');
+};
+
+function renderClienteEmbalagensModal(){
+  const clienteId = window._cliEmbCurrentId;
+  const grid  = document.getElementById('cliemb-grid');
+  const empty = document.getElementById('cliemb-empty');
+  if(!grid || !clienteId) return;
+
+  const estoqueAtivo = !!window._moduloEstoqueAtivo;
+  ['th-cliemb-vazias','th-cliemb-cheias','th-cliemb-total'].forEach(id=>{
+    const th=document.getElementById(id); if(th) th.style.display = estoqueAtivo ? '' : 'none';
+  });
+
+  const data = window._embCat.filter(e=>e.clienteId===clienteId);
+  if(!data.length){ grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  grid.innerHTML = data.map(e=>{
+    const vazias = estoqueAtivo ? getSaldoVazias(e) : 0;
+    const cheias = estoqueAtivo ? getSaldoCheias(e) : 0;
+    const total  = estoqueAtivo ? getSaldoTotal(e)  : 0;
+    const estoqueCols = estoqueAtivo ? `
+      <td class="col-vazias" style="font-family:var(--font-mono);font-weight:700;color:${vazias>0?'#60a5fa':'var(--text2)'}">${vazias}</td>
+      <td class="col-cheias" style="font-family:var(--font-mono);font-weight:700;color:${cheias>0?'var(--accent)':'var(--text2)'}">${cheias}</td>
+      <td class="col-total" style="font-family:var(--font-mono);font-weight:700;color:${total>0?'var(--text)':'var(--text3)'}">${total}</td>` : '';
+    return `<tr>
+      <td><div class="name-cell">${e.capa?`<img src="${e.capa}" class="list-thumb" alt="">`:`<div class="list-thumb-placeholder">📦</div>`}<span style="font-family:var(--font-mono);font-size:13px">${esc(e.codigo)}</span></div></td>
+      <td>${esc(e.descricao||'–')}</td>
+      <td>${esc(e.nomeInterno||'–')}</td>
+      ${estoqueCols}
+    </tr>`;
+  }).join('');
+}
 
 // ── EMBALAGENS CATÁLOGO ────────────────────────────────
 async function loadEmbCat() {
@@ -2676,7 +2757,7 @@ window.showToast=(msg,error=false)=>{const t=document.getElementById('toast');t.
 function showErr(el,msg){el.style.display='block';el.textContent=msg;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
+['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico','modal-cliente-embalagens'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
 document.getElementById('img-viewer')?.addEventListener('click',function(e){if(e.target===this)closeImgViewer();});
 </script>
 </body>
