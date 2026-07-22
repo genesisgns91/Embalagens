@@ -47,7 +47,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;}
-.btn-primary{background:var(--accent);color:#0d0f14;width:auto;padding:13px;}
+.btn-primary{background:var(--accent);color:#0d0f14;width:100%;padding:13px;}
 .btn-primary:hover{filter:brightness(1.1);}
 .btn:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(.3);}
 .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
@@ -155,6 +155,14 @@ th.col-vazias,th.col-cheias,th.col-total{color:var(--text);}
 .export-bar .count{font-size:13px;color:var(--text2);}
 .export-bar .count span{color:var(--text);font-weight:600;}
 .export-btns{display:flex;gap:8px;}
+
+/* PAGINATION */
+.pag-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 4px 4px;flex-wrap:wrap;}
+.pag-bar .pag-info{font-size:12px;color:var(--text2);}
+.pag-bar .pag-btns{display:flex;gap:8px;align-items:center;}
+.mov-tipo{display:inline-block;padding:3px 9px;border-radius:8px;font-size:11px;font-weight:600;letter-spacing:.3px;white-space:nowrap;}
+.mov-tipo.entrada{background:rgba(0,229,160,.15);color:var(--accent);}
+.mov-tipo.saida{background:rgba(255,107,53,.15);color:var(--warn);}
 
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:16px;}
@@ -443,6 +451,10 @@ th.col-vazias,th.col-cheias,th.col-total{color:var(--text);}
       </div>
       <div class="export-bar">
         <div class="count">Total recebido no período: <span id="embcat-total-periodo">0</span></div>
+        <div class="export-btns">
+          <button class="btn btn-secondary btn-sm" onclick="exportEmbCatCSV()">⬇ CSV</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportEmbCatXLSX()">⬇ Excel (.xlsx)</button>
+        </div>
       </div>
       <div class="table-wrap">
         <div style="overflow-x:auto;">
@@ -482,6 +494,18 @@ th.col-vazias,th.col-cheias,th.col-total{color:var(--text);}
         </select>
       </div>
       <div class="field"><label>BUSCAR CÓDIGO / NOME</label><input type="text" id="filter-baixa-cod" placeholder="Código ou nome..." oninput="renderBaixaSaldo()"></div>
+      <div style="display:flex;align-items:flex-end;">
+        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap;padding:10px 0;">
+          <input type="checkbox" id="filter-baixa-saldo" onchange="renderBaixaSaldo()" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"> Ocultar itens sem saldo
+        </label>
+      </div>
+    </div>
+    <div class="export-bar">
+      <div class="count">Exibindo <span id="count-baixa">0</span> itens</div>
+      <div class="export-btns">
+        <button class="btn btn-secondary btn-sm" onclick="exportBaixaCSV()">⬇ CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportBaixaXLSX()">⬇ Excel (.xlsx)</button>
+      </div>
     </div>
     <div class="table-wrap">
       <div style="overflow-x:auto;">
@@ -489,8 +513,8 @@ th.col-vazias,th.col-cheias,th.col-total{color:var(--text);}
           <thead><tr>
             <th class="sortable" onclick="sortBaixaSaldo('codigo')">Embalagem<span class="sort-ind" id="sort-ind-bx-codigo"></span></th>
             <th class="sortable" onclick="sortBaixaSaldo('cliente')">Cliente<span class="sort-ind" id="sort-ind-bx-cliente"></span></th>
-            <th class="sortable" onclick="sortBaixaSaldo('entradas')">Entradas<span class="sort-ind" id="sort-ind-bx-entradas"></span></th>
-            <th class="sortable" onclick="sortBaixaSaldo('baixas')">Baixas<span class="sort-ind" id="sort-ind-bx-baixas"></span></th>
+            <th class="sortable" style="display:none" onclick="sortBaixaSaldo('entradas')">Entradas<span class="sort-ind" id="sort-ind-bx-entradas"></span></th>
+            <th class="sortable" style="display:none" onclick="sortBaixaSaldo('baixas')">Baixas<span class="sort-ind" id="sort-ind-bx-baixas"></span></th>
             <th class="sortable col-vazias" onclick="sortBaixaSaldo('vazio')">Saldo Vazio<span class="sort-ind" id="sort-ind-bx-vazio"></span></th>
             <th class="sortable col-cheias" onclick="sortBaixaSaldo('cheio')">Saldo Cheio<span class="sort-ind" id="sort-ind-bx-cheio"></span></th>
             <th class="sortable col-total" onclick="sortBaixaSaldo('total')">Saldo Total<span class="sort-ind" id="sort-ind-bx-total"></span></th>
@@ -849,6 +873,41 @@ th.col-vazias,th.col-cheias,th.col-total{color:var(--text);}
   </div>
 </div>
 
+<!-- MODAL HISTÓRICO DE MOVIMENTAÇÕES -->
+<div id="modal-historico" class="modal-overlay">
+  <div class="modal" style="max-width:820px;">
+    <button class="modal-close" onclick="closeModal('modal-historico')">✕</button>
+    <div class="modal-title">📜 Histórico de Movimentações</div>
+    <div class="detail-grid" style="margin-bottom:18px;">
+      <div class="detail-item"><label>EMBALAGEM</label><span id="hist-info-embalagem">–</span></div>
+      <div class="detail-item"><label>CLIENTE</label><span id="hist-info-cliente">–</span></div>
+    </div>
+    <div class="table-wrap">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="sortHistorico('codigo')">Embalagem<span class="sort-ind" id="sort-ind-hist-codigo"></span></th>
+            <th class="sortable" onclick="sortHistorico('cliente')">Cliente<span class="sort-ind" id="sort-ind-hist-cliente"></span></th>
+            <th class="sortable" onclick="sortHistorico('qtd')">Quantidade<span class="sort-ind" id="sort-ind-hist-qtd"></span></th>
+            <th class="sortable" onclick="sortHistorico('tipo')">Tipo<span class="sort-ind" id="sort-ind-hist-tipo"></span></th>
+            <th class="sortable" onclick="sortHistorico('usuario')">Usuário<span class="sort-ind" id="sort-ind-hist-usuario"></span></th>
+            <th class="sortable" onclick="sortHistorico('data')">Data / Hora<span class="sort-ind" id="sort-ind-hist-data"></span></th>
+          </tr></thead>
+          <tbody id="historico-grid"></tbody>
+        </table>
+      </div>
+      <div id="historico-empty" class="empty-state" style="display:none;"><div class="empty-icon">📭</div><p>Nenhuma movimentação encontrada</p></div>
+    </div>
+    <div class="pag-bar" id="historico-pag-bar" style="display:none;">
+      <div class="pag-info" id="historico-pag-info">–</div>
+      <div class="pag-btns">
+        <button class="btn btn-secondary btn-sm" id="hist-btn-prev" onclick="gotoHistoricoPage(-1)">‹ Anterior</button>
+        <button class="btn btn-secondary btn-sm" id="hist-btn-next" onclick="gotoHistoricoPage(1)">Próxima ›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- IMG VIEWER -->
 <div id="img-viewer">
   <button id="img-viewer-close" onclick="closeImgViewer()">✕ Fechar</button>
@@ -876,6 +935,11 @@ const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
 const ADMIN_PASS = 'Log#001';
+// verificação centralizada da senha de administrador — usada em todas as exclusões e no gate do painel Adm
+function checkAdminPassOrFail(pass, errElement){
+  if(pass!==ADMIN_PASS){ showErr(errElement,'Senha incorreta.'); return false; }
+  return true;
+}
 
 // ROLES: visualizador | operador | administrador
 const ROLE_LABELS = { visualizador:'Visualizador', operador:'Operador', administrador:'Administrador' };
@@ -1078,8 +1142,13 @@ async function loadClientes() {
 }
 window.loadClientes = loadClientes;
 
+// helper único para montar as <option> de cliente, reutilizado por todos os selects do sistema
+function buildClienteOptions() {
+  return window._clientes.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+}
+
 function populateClienteSelects() {
-  const opts = window._clientes.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+  const opts = buildClienteOptions();
   document.getElementById('emb-cat-cli').innerHTML = '<option value="">— Selecione o cliente —</option>' + opts;
   const filterSel = document.getElementById('filter-embcat-cli');
   filterSel.innerHTML = '<option value="">Todos os clientes</option>' + opts;
@@ -1194,7 +1263,7 @@ window.confirmDeleteCli = async () => {
   const errEl = document.getElementById('delete-cli-error');
   const id    = document.getElementById('delete-cli-id').value;
   errEl.style.display='none';
-  if(pass!==ADMIN_PASS){showErr(errEl,'Senha incorreta.');return;}
+  if(!checkAdminPassOrFail(pass,errEl))return;
   try {
     await deleteDoc(doc(db,'clientes',id));
     // also delete linked embalagens
@@ -1226,14 +1295,15 @@ window._baixaSort     = {field:null, dir:1};
 window._solSort       = {field:null, dir:1};
 
 // aplica indicador visual (▲/▼) no cabeçalho ativo de uma tabela ordenável
+function sortIndId(prefix, field){ return prefix ? `sort-ind-${prefix}-${field}` : `sort-ind-${field}`; }
 function applySortIndicator(prefix, state, fields){
   fields.forEach(f=>{
-    const ind = document.getElementById(`sort-ind-${prefix}-${f}`);
+    const ind = document.getElementById(sortIndId(prefix, f));
     if(ind) ind.textContent = '';
     ind?.parentElement?.classList.remove('sort-active');
   });
   if(state.field){
-    const ind = document.getElementById(`sort-ind-${prefix}-${state.field}`);
+    const ind = document.getElementById(sortIndId(prefix, state.field));
     if(ind){ ind.textContent = state.dir===1?'▲':'▼'; ind.parentElement.classList.add('sort-active'); }
   }
 }
@@ -1248,18 +1318,23 @@ function genericSort(arr, state, getVal){
   });
 }
 
-window.renderEmbCat = () => {
+// filtro reutilizável do Catálogo de Embalagens (usado na renderização e na exportação)
+function getFilteredEmbCat(){
   const fc  = document.getElementById('filter-embcat-cli')?.value||'';
   const fk  = (document.getElementById('filter-embcat-cod')?.value||'').toLowerCase();
-  const fdi = document.getElementById('filter-embcat-data-ini')?.value||'';
-  const fdf = document.getElementById('filter-embcat-data-fim')?.value||'';
   const hideZero = document.getElementById('filter-embcat-saldo')?.checked;
-  let data = window._embCat.filter(e=>{
+  return window._embCat.filter(e=>{
     if(fc && e.clienteId!==fc) return false;
     if(fk && !e.codigo?.toLowerCase().includes(fk) && !e.nomeInterno?.toLowerCase().includes(fk) && !e.descricao?.toLowerCase().includes(fk)) return false;
     if(hideZero && getSaldoDisponivel(e) <= 0) return false;
     return true;
   });
+}
+
+window.renderEmbCat = () => {
+  const fdi = document.getElementById('filter-embcat-data-ini')?.value||'';
+  const fdf = document.getElementById('filter-embcat-data-fim')?.value||'';
+  let data = getFilteredEmbCat();
   const grid  = document.getElementById('embcat-grid');
   const empty = document.getElementById('embcat-empty');
 
@@ -1267,7 +1342,7 @@ window.renderEmbCat = () => {
   const canWrite = ['operador','administrador'].includes(window._userRole);
   const canDel   = window._userRole==='administrador';
   let totalPeriodo = 0;
-  const rows = data.map(e=>{
+  let rows = data.map(e=>{
     const cli = window._clientes.find(c=>c.id===e.clienteId);
     const ult = getUltimoRecebimento(e);
     const recebidoPeriodo = getRecebidoNoPeriodo(e, fdi, fdf);
@@ -1284,41 +1359,26 @@ window.renderEmbCat = () => {
   if(!rows.length){grid.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
 
-  // ordenação pelo cabeçalho selecionado
-  const {field, dir} = window._embCatSort;
-  if(field){
-    const getVal = (row)=>{
-      switch(field){
-        case 'codigo': return (row.e.codigo||'').toLowerCase();
-        case 'cliente': return (row.cli?.nome||'').toLowerCase();
-        case 'nomeInterno': return (row.e.nomeInterno||'').toLowerCase();
-        case 'codDatasul': return Number(row.e.codDatasul)||-Infinity;
-        case 'qtdFardo': return Number(row.e.qtdFardo)||-Infinity;
-        case 'valor': return (row.e.valor!=null && row.e.valor!=='') ? Number(row.e.valor) : -Infinity;
-        case 'ultimoRecebimento': return row.ult ? parseDataHoraToSortable(row.ult.data) : -Infinity;
-        case 'qtdRecebida': return row.ult ? Number(row.ult.qtd)||0 : -Infinity;
-        case 'recebidoPeriodo': return row.recebidoPeriodo;
-        case 'vazias': return row.vazias;
-        case 'cheias': return row.cheias;
-        case 'total': return row.total;
-        default: return '';
-      }
-    };
-    rows.sort((a,b)=>{
-      const va=getVal(a), vb=getVal(b);
-      if(va<vb) return -1*dir;
-      if(va>vb) return 1*dir;
-      return 0;
-    });
-  }
-  document.querySelectorAll('.table-wrap th.sortable').forEach(th=>th.classList.remove('sort-active'));
-  document.querySelectorAll('.sort-ind').forEach(s=>s.textContent='');
-  if(field){
-    const th=document.querySelector(`.table-wrap th.sortable[onclick="sortEmbCat('${field}')"]`);
-    th?.classList.add('sort-active');
-    const ind=document.getElementById('sort-ind-'+field);
-    if(ind) ind.textContent = dir===1 ? '▲' : '▼';
-  }
+  // ordenação pelo cabeçalho selecionado (reutiliza o helper genérico de ordenação)
+  const embCatGetVal = (row)=>{
+    switch(window._embCatSort.field){
+      case 'codigo': return (row.e.codigo||'').toLowerCase();
+      case 'cliente': return (row.cli?.nome||'').toLowerCase();
+      case 'nomeInterno': return (row.e.nomeInterno||'').toLowerCase();
+      case 'codDatasul': return Number(row.e.codDatasul)||-Infinity;
+      case 'qtdFardo': return Number(row.e.qtdFardo)||-Infinity;
+      case 'valor': return (row.e.valor!=null && row.e.valor!=='') ? Number(row.e.valor) : -Infinity;
+      case 'ultimoRecebimento': return row.ult ? parseDataHoraToSortable(row.ult.data) : -Infinity;
+      case 'qtdRecebida': return row.ult ? Number(row.ult.qtd)||0 : -Infinity;
+      case 'recebidoPeriodo': return row.recebidoPeriodo;
+      case 'vazias': return row.vazias;
+      case 'cheias': return row.cheias;
+      case 'total': return row.total;
+      default: return '';
+    }
+  };
+  rows = genericSort(rows, window._embCatSort, embCatGetVal);
+  applySortIndicator('', window._embCatSort, ['codigo','cliente','nomeInterno','codDatasul','qtdFardo','valor','ultimoRecebimento','qtdRecebida','recebidoPeriodo','vazias','cheias','total']);
 
   grid.innerHTML = rows.map(({e,cli,ult,recebidoPeriodo,vazias,cheias,total})=>{
     const valorFmt = (e.valor!=null && e.valor!=='') ? 'R$ '+Number(e.valor).toFixed(2).replace('.',',') : '–';
@@ -1464,16 +1524,25 @@ async function loadBaixas(){
 }
 window.loadBaixas = loadBaixas;
 
+// filtro reutilizável da Baixa de Saldo (usado na renderização e na exportação)
+function getFilteredBaixaSaldo(){
+  const fc = document.getElementById('filter-baixa-cli')?.value||'';
+  const fk = (document.getElementById('filter-baixa-cod')?.value||'').toLowerCase();
+  const hideZero = document.getElementById('filter-baixa-saldo')?.checked;
+  return window._embCat.filter(e=>{
+    if(fc && e.clienteId!==fc) return false;
+    if(fk && !e.codigo?.toLowerCase().includes(fk) && !e.nomeInterno?.toLowerCase().includes(fk) && !e.descricao?.toLowerCase().includes(fk)) return false;
+    if(hideZero && getSaldoTotal(e) <= 0) return false;
+    return true;
+  });
+}
+
 window.renderBaixaSaldo = () => {
   const grid = document.getElementById('baixa-saldo-grid');
   if(!grid) return;
-  const fc = document.getElementById('filter-baixa-cli')?.value||'';
-  const fk = (document.getElementById('filter-baixa-cod')?.value||'').toLowerCase();
-  let data = window._embCat.filter(e=>{
-    if(fc && e.clienteId!==fc) return false;
-    if(fk && !e.codigo?.toLowerCase().includes(fk) && !e.nomeInterno?.toLowerCase().includes(fk) && !e.descricao?.toLowerCase().includes(fk)) return false;
-    return true;
-  });
+  let data = getFilteredBaixaSaldo();
+  const countEl = document.getElementById('count-baixa');
+  if(countEl) countEl.textContent = data.length;
   const empty = document.getElementById('baixa-saldo-empty');
   const bxSortFields = ['codigo','cliente','entradas','baixas','vazio','cheio','total'];
   if(!data.length){grid.innerHTML='';empty.style.display='block';applySortIndicator('bx', window._baixaSort, bxSortFields);return;}
@@ -1502,11 +1571,11 @@ window.renderBaixaSaldo = () => {
     const cheio = getSaldoCheias(e);
     const total = getSaldoTotal(e);
     const semSaldo = total <= 0;
-    return `<tr${semSaldo?' style="opacity:.55"':''}>
+    return `<tr style="cursor:pointer${semSaldo?';opacity:.55':''}" onclick="if(!event.target.closest('button'))openHistorico('${e.id}')" title="Clique para ver o histórico de movimentações">
       <td><div style="font-family:var(--font-mono);font-size:13px">${esc(e.codigo)}</div><div style="font-size:12px;color:var(--text2)">${esc(e.descricao||'–')}</div></td>
       <td style="color:var(--accent)">${esc(cli?.nome||'–')}</td>
-      <td style="font-family:var(--font-mono)">${entradas}</td>
-      <td style="font-family:var(--font-mono)">${baixas}</td>
+      <td style="display:none;font-family:var(--font-mono)">${entradas}</td>
+      <td style="display:none;font-family:var(--font-mono)">${baixas}</td>
       <td class="col-vazias" style="font-family:var(--font-mono);font-weight:700;color:${vazio>0?'#60a5fa':'var(--text2)'}">${vazio}</td>
       <td class="col-cheias" style="font-family:var(--font-mono);font-weight:700;color:${cheio>0?'var(--accent)':'var(--text2)'}">${cheio}</td>
       <td class="col-total" style="font-family:var(--font-mono);font-weight:700;color:${total>0?'var(--text)':'var(--text3)'}">${total}${semSaldo?' <span style="font-size:10px;color:var(--warn);font-family:var(--font-body);font-weight:600;">· sem saldo</span>':''}</td>
@@ -1603,7 +1672,7 @@ window.confirmarBaixa = async () => {
       dataHora, timestamp: serverTimestamp(),
       usuario, uid: window._currentUser.uid,
       clienteId, clienteNome: cli?.nome||'',
-      codigo, codigoEmbalagem: codigo,
+      codigo,
       qtdVazias, qtdCheias, qtdTotalBaixada, obs
     };
     await addDoc(collection(db,'baixas_embalagens'), novaBaixa);
@@ -1627,6 +1696,130 @@ function limparFormBaixa(){
   document.getElementById('baixa-qtd-cheias').value = 0;
   document.getElementById('baixa-obs').value = '';
   document.getElementById('modal-baixa-error').style.display = 'none';
+}
+
+// ── HISTÓRICO DE MOVIMENTAÇÕES ──────────────────────────
+window._historicoSort = {field:'data', dir:-1};
+window._historicoPage = 1;
+window._historicoRows = [];
+const HIST_PAGE_SIZE = 20;
+
+// monta a lista de movimentações (entradas, baixas manuais e atendimentos) de uma embalagem específica
+function buildHistoricoMovimentacoes(emb, cliNome){
+  const rows = [];
+  // Entradas (+Registro)
+  for(const r of (window._registros||[])){
+    for(const item of (r.embalagens||[])){
+      if(item.codigo!==emb.codigo) continue;
+      const itCli = item.clienteId || r.clienteId;
+      if(itCli!==emb.clienteId) continue;
+      rows.push({
+        codigo: emb.codigo, cliente: cliNome,
+        qtd: Number(item.qtd)||0, tipo: 'Entrada',
+        usuario: r.usuario||'–', data: r.dataHora||'–',
+        sortTs: parseDataHoraToSortable(r.dataHora)
+      });
+    }
+  }
+  // Baixas manuais (vazias e cheias tratadas separadamente)
+  for(const b of (window._baixas||[])){
+    if(b.codigo!==emb.codigo || b.clienteId!==emb.clienteId) continue;
+    const qv = (b.qtdVazias!=null) ? (Number(b.qtdVazias)||0) : (Number(b.qtd)||0);
+    const qc = Number(b.qtdCheias)||0;
+    const ts = parseDataHoraToSortable(b.dataHora);
+    if(qv>0) rows.push({codigo:emb.codigo, cliente:cliNome, qtd:qv, tipo:'Saída – Baixa (Vazias)', usuario:b.usuario||'–', data:b.dataHora||'–', sortTs:ts});
+    if(qc>0) rows.push({codigo:emb.codigo, cliente:cliNome, qtd:qc, tipo:'Saída – Baixa (Cheias)', usuario:b.usuario||'–', data:b.dataHora||'–', sortTs:ts});
+  }
+  // Solicitações atendidas (transferem de VAZIAS para CHEIAS)
+  for(const s of (window._solicitacoes||[])){
+    if(s.status!=='ATENDIDO' || s.codigo!==emb.codigo || s.clienteId!==emb.clienteId) continue;
+    rows.push({
+      codigo: emb.codigo, cliente: cliNome,
+      qtd: Number(s.qtdAtendida)||0, tipo: 'Saída – Atendimento (Vazia→Cheia)',
+      usuario: s.atendidoPor||'–', data: s.atendidoData||'–',
+      sortTs: parseDataHoraToSortable(s.atendidoData)
+    });
+  }
+  return rows;
+}
+
+window.openHistorico = (embCatId) => {
+  const e = window._embCat.find(x=>x.id===embCatId); if(!e) return;
+  const cli = window._clientes.find(c=>c.id===e.clienteId);
+  const cliNome = cli?.nome||'–';
+  document.getElementById('hist-info-embalagem').textContent = `${e.codigo} – ${e.descricao||''}`;
+  document.getElementById('hist-info-cliente').textContent = cliNome;
+  window._historicoRows = buildHistoricoMovimentacoes(e, cliNome);
+  window._historicoSort = {field:'data', dir:-1};
+  window._historicoPage = 1;
+  document.getElementById('modal-historico').classList.add('open');
+  renderHistorico();
+};
+
+window.sortHistorico = (field) => {
+  const s = window._historicoSort;
+  if(s.field===field) s.dir*=-1; else { s.field=field; s.dir=1; }
+  window._historicoPage = 1;
+  renderHistorico();
+};
+
+window.gotoHistoricoPage = (delta) => {
+  const totalPages = Math.max(1, Math.ceil(window._historicoRows.length / HIST_PAGE_SIZE));
+  const next = window._historicoPage + delta;
+  if(next<1 || next>totalPages) return;
+  window._historicoPage = next;
+  renderHistorico();
+};
+
+function renderHistorico(){
+  const grid  = document.getElementById('historico-grid');
+  const empty = document.getElementById('historico-empty');
+  const pagBar = document.getElementById('historico-pag-bar');
+  const fields = ['codigo','cliente','qtd','tipo','usuario','data'];
+
+  const getVal = (row)=>{
+    switch(window._historicoSort.field){
+      case 'codigo': return (row.codigo||'').toLowerCase();
+      case 'cliente': return (row.cliente||'').toLowerCase();
+      case 'qtd': return Number(row.qtd)||0;
+      case 'tipo': return (row.tipo||'').toLowerCase();
+      case 'usuario': return (row.usuario||'').toLowerCase();
+      case 'data': return row.sortTs;
+      default: return '';
+    }
+  };
+  const sorted = genericSort(window._historicoRows, window._historicoSort, getVal);
+  applySortIndicator('hist', window._historicoSort, fields);
+
+  if(!sorted.length){
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    pagBar.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / HIST_PAGE_SIZE));
+  if(window._historicoPage > totalPages) window._historicoPage = totalPages;
+  const startIdx = (window._historicoPage-1) * HIST_PAGE_SIZE;
+  const pageRows = sorted.slice(startIdx, startIdx + HIST_PAGE_SIZE);
+
+  grid.innerHTML = pageRows.map(row=>{
+    const isEntrada = row.tipo === 'Entrada';
+    return `<tr>
+      <td style="font-family:var(--font-mono);font-size:13px">${esc(row.codigo)}</td>
+      <td style="color:var(--accent)">${esc(row.cliente)}</td>
+      <td style="font-family:var(--font-mono);font-weight:600">${esc(String(row.qtd))}</td>
+      <td><span class="mov-tipo ${isEntrada?'entrada':'saida'}">${esc(row.tipo)}</span></td>
+      <td>${esc(row.usuario)}</td>
+      <td style="white-space:nowrap;font-family:var(--font-mono);font-size:12px">${esc(row.data)}</td>
+    </tr>`;
+  }).join('');
+
+  pagBar.style.display = 'flex';
+  document.getElementById('historico-pag-info').textContent = `Página ${window._historicoPage} de ${totalPages} · ${sorted.length} movimentação(ões)`;
+  document.getElementById('hist-btn-prev').disabled = window._historicoPage<=1;
+  document.getElementById('hist-btn-next').disabled = window._historicoPage>=totalPages;
 }
 
 // ── SOLICITAÇÕES DE EMBALAGENS ──────────────────────────
@@ -1744,7 +1937,7 @@ window.renderSolicitacoes = () => {
       <td><span class="badge-status ${statusClass}">${statusLabel}</span></td>
       <td style="white-space:nowrap">
         <button class="btn btn-secondary btn-sm btn-icon" style="margin-right:4px" onclick="openSolDetail('${s.id}')" title="Detalhes">👁</button>
-        ${canWrite && isPendente ? `<button class="btn btn-primary btn-sm" style="margin-right:2px" onclick="openModalAtender('${s.id}')">Atender</button>` : ''}
+        ${canWrite && isPendente ? `<button class="btn btn-primary btn-sm" style="margin-right:4px" onclick="openModalAtender('${s.id}')">Atender</button>` : ''}
         ${canWrite && isPendente ? `<button class="btn btn-danger btn-sm" onclick="openModalRecusar('${s.id}')">Recusar</button>` : ''}
       </td>
     </tr>`;
@@ -1950,7 +2143,7 @@ window.confirmDeleteEmb=async()=>{
   const errEl=document.getElementById('delete-emb-error');
   const id=document.getElementById('delete-emb-id').value;
   errEl.style.display='none';
-  if(pass!==ADMIN_PASS){showErr(errEl,'Senha incorreta.');return;}
+  if(!checkAdminPassOrFail(pass,errEl))return;
   try{
     await deleteDoc(doc(db,'embalagensCat',id));
     window._embCat=window._embCat.filter(e=>e.id!==id);
@@ -2062,7 +2255,7 @@ window.processarImportEmb = async () => {
 window.addEmbRow = () => {
   const list=document.getElementById('emb-list'); if(!list) return;
   const id='emb_'+Date.now()+Math.random().toString(36).slice(2,6);
-  const cliOpts = window._clientes.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+  const cliOpts = buildClienteOptions();
   const row=document.createElement('div'); row.className='emb-row'; row.id=id;
   row.innerHTML=`
     <div class="field"><label>CLIENTE *</label>
@@ -2255,7 +2448,7 @@ window.confirmDelete=async()=>{
   const pass=document.getElementById('delete-pass-input').value;
   const errEl=document.getElementById('delete-error');
   errEl.style.display='none';
-  if(pass!==ADMIN_PASS){showErr(errEl,'Senha incorreta.');return;}
+  if(!checkAdminPassOrFail(pass,errEl))return;
   try{
     await deleteDoc(doc(db,'registros',window._pendingDeleteId));
     window._registros=window._registros.filter(r=>r.id!==window._pendingDeleteId);
@@ -2324,24 +2517,72 @@ window.limparFiltros=()=>{
 };
 
 // ── EXPORT ─────────────────────────────────────────────
-window.exportCSV=()=>{
-  const data=getFiltered();if(!data.length){showToast('Nenhum dado.',true);return;}
+// Monta as linhas (cabeçalho + dados) para exportação de CSV/XLSX de forma padronizada,
+// reutilizada pelas três telas com relatório (Consulta, Baixa de Saldo, Catálogo de Embalagens).
+function buildExportRows(data, type){
+  if(type==='baixa'){
+    const rows=[['Embalagem','Descrição','Cliente','Saldo Vazio','Saldo Cheio','Saldo Total']];
+    data.forEach(e=>{
+      const cli = window._clientes.find(c=>c.id===e.clienteId);
+      rows.push([e.codigo||'', e.descricao||'', cli?.nome||'', getSaldoVazias(e), getSaldoCheias(e), getSaldoTotal(e)]);
+    });
+    return rows;
+  }
+  if(type==='embcat'){
+    const fdi = document.getElementById('filter-embcat-data-ini')?.value||'';
+    const fdf = document.getElementById('filter-embcat-data-fim')?.value||'';
+    const rows=[['Embalagem','Descrição','Cliente','Nome Interno','Cód. Datasul','Qtd/Fardo','Valor (R$)','Último Recebimento','Qtd. Recebida','Recebido no Período','Saldo Vazio','Saldo Cheio','Saldo Total']];
+    data.forEach(e=>{
+      const cli = window._clientes.find(c=>c.id===e.clienteId);
+      const ult = getUltimoRecebimento(e);
+      rows.push([e.codigo||'', e.descricao||'', cli?.nome||'', e.nomeInterno||'', e.codDatasul||'', e.qtdFardo||'', (e.valor!=null&&e.valor!=='')?Number(e.valor):'', ult?ult.data:'', ult?ult.qtd:'', getRecebidoNoPeriodo(e,fdi,fdf), getSaldoVazias(e), getSaldoCheias(e), getSaldoTotal(e)]);
+    });
+    return rows;
+  }
+  // 'registros' (padrão): Consulta de Registros
   const rows=[['Data/Hora','Usuário','Placa','Transportadora','Cliente','Nota Fiscal','Cód. Embalagem','Quantidade','Observações']];
   data.forEach(r=>(r.embalagens?.length?r.embalagens:[{}]).forEach((e,i)=>rows.push([i===0?r.dataHora:'',i===0?(r.usuario||''):'',i===0?(r.placa||''):'',i===0?(r.transportadora||''):'',e.clienteNome||r.clienteNome||r.cliente||'',i===0?(r.nota||''):'',e.codigo||'',e.qtd||'',i===0?(r.obs||''):''])));
-  dlFile('embalagens_'+ds()+'.csv','text/csv;charset=utf-8;','\uFEFF'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'));
+  return rows;
+}
+function rowsToCSV(rows){return '\uFEFF'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');}
+function rowsToXLSX(rows,sheetName,colWidths,fileName){
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  if(colWidths) ws['!cols']=colWidths.map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheetName);XLSX.writeFile(wb,fileName);
+}
+
+window.exportCSV=()=>{
+  const data=getFiltered();if(!data.length){showToast('Nenhum dado.',true);return;}
+  dlFile('embalagens_'+ds()+'.csv','text/csv;charset=utf-8;',rowsToCSV(buildExportRows(data,'registros')));
 };
 window.exportXLSX=()=>{
   const data=getFiltered();if(!data.length){showToast('Nenhum dado.',true);return;}
-  const rows=[['Data/Hora','Usuário','Placa','Transportadora','Cliente','Nota Fiscal','Cód. Embalagem','Quantidade','Observações']];
-  data.forEach(r=>(r.embalagens?.length?r.embalagens:[{}]).forEach((e,i)=>rows.push([i===0?r.dataHora:'',i===0?(r.usuario||''):'',i===0?(r.placa||''):'',i===0?(r.transportadora||''):'',e.clienteNome||r.clienteNome||r.cliente||'',i===0?(r.nota||''):'',e.codigo||'',e.qtd||'',i===0?(r.obs||''):''])));
-  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[20,20,14,20,28,16,20,12,32].map(w=>({wch:w}));
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Embalagens');XLSX.writeFile(wb,'embalagens_'+ds()+'.xlsx');
+  rowsToXLSX(buildExportRows(data,'registros'),'Embalagens',[20,20,14,20,28,16,20,12,32],'embalagens_'+ds()+'.xlsx');
 };
 function getFiltered(){
   const fc=(document.getElementById('filter-cliente')?.value||'').toLowerCase();
   const fk=(document.getElementById('filter-cod')?.value||'').toLowerCase();
   return window._registros.filter(r=>{if(!registroMatchesCliente(r,fc))return false;if(fk&&!r.embalagens?.some(e=>e.codigo?.toLowerCase().includes(fk)))return false;return true;});
 }
+
+window.exportBaixaCSV=()=>{
+  const data=getFilteredBaixaSaldo();if(!data.length){showToast('Nenhum dado.',true);return;}
+  dlFile('saldo_embalagens_'+ds()+'.csv','text/csv;charset=utf-8;',rowsToCSV(buildExportRows(data,'baixa')));
+};
+window.exportBaixaXLSX=()=>{
+  const data=getFilteredBaixaSaldo();if(!data.length){showToast('Nenhum dado.',true);return;}
+  rowsToXLSX(buildExportRows(data,'baixa'),'Saldo',[18,28,22,12,12,12],'saldo_embalagens_'+ds()+'.xlsx');
+};
+
+window.exportEmbCatCSV=()=>{
+  const data=getFilteredEmbCat();if(!data.length){showToast('Nenhum dado.',true);return;}
+  dlFile('catalogo_embalagens_'+ds()+'.csv','text/csv;charset=utf-8;',rowsToCSV(buildExportRows(data,'embcat')));
+};
+window.exportEmbCatXLSX=()=>{
+  const data=getFilteredEmbCat();if(!data.length){showToast('Nenhum dado.',true);return;}
+  rowsToXLSX(buildExportRows(data,'embcat'),'Catalogo',[16,26,22,16,12,10,12,18,12,16,12,12,12],'catalogo_embalagens_'+ds()+'.xlsx');
+};
+
 function dlFile(name,type,content){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
 function ds(){const d=new Date();return`${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}`;}
 
@@ -2349,8 +2590,8 @@ function ds(){const d=new Date();return`${d.getFullYear()}${p2(d.getMonth()+1)}$
 window.checkAdminPass=()=>{
   const v=document.getElementById('admin-pass-input').value;
   const errEl=document.getElementById('admin-error');
-  if(v===ADMIN_PASS){document.getElementById('admin-gate-wrap').style.display='none';document.getElementById('admin-panel').style.display='block';loadUsers();}
-  else{showErr(errEl,'Senha incorreta.');}
+  if(!checkAdminPassOrFail(v,errEl))return;
+  document.getElementById('admin-gate-wrap').style.display='none';document.getElementById('admin-panel').style.display='block';loadUsers();
 };
 window.lockAdmin=()=>{
   document.getElementById('admin-gate-wrap').style.display='block';
@@ -2418,7 +2659,7 @@ window.showToast=(msg,error=false)=>{const t=document.getElementById('toast');t.
 function showErr(el,msg){el.style.display='block';el.textContent=msg;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
+['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
 document.getElementById('img-viewer')?.addEventListener('click',function(e){if(e.target===this)closeImgViewer();});
 </script>
 </body>
