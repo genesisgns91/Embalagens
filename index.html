@@ -1598,23 +1598,36 @@ window.confirmarBaixa = async () => {
   try{
     const dataHora = formatDt(new Date());
     const usuario = window._currentUser.displayName || window._currentUser.email;
+    const qtdTotalBaixada = qtdVazias + qtdCheias;
     const novaBaixa = {
       dataHora, timestamp: serverTimestamp(),
       usuario, uid: window._currentUser.uid,
-      clienteId, clienteNome: cli?.nome||'', codigo,
-      qtdVazias, qtdCheias, obs
+      clienteId, clienteNome: cli?.nome||'',
+      codigo, codigoEmbalagem: codigo,
+      qtdVazias, qtdCheias, qtdTotalBaixada, obs
     };
     await addDoc(collection(db,'baixas_embalagens'), novaBaixa);
     window._baixas.unshift({ ...novaBaixa, timestamp:new Date() });
     showToast('✓ Baixa registrada!');
+    limparFormBaixa();
     closeModal('modal-baixa');
+    // atualiza dinamicamente os saldos exibidos na aba de Baixas e no Catálogo de Embalagens
     renderBaixaSaldo();
+    if (document.getElementById('embcat-grid')) renderEmbCat();
   }catch(err){
     showErr(errEl, 'Erro: '+(err.code||err.message));
   }finally{
     btn.disabled=false; btn.textContent='Confirmar Baixa';
   }
 };
+
+// limpa os campos do modal de baixa após confirmação/fechamento
+function limparFormBaixa(){
+  document.getElementById('baixa-qtd-vazias').value = 0;
+  document.getElementById('baixa-qtd-cheias').value = 0;
+  document.getElementById('baixa-obs').value = '';
+  document.getElementById('modal-baixa-error').style.display = 'none';
+}
 
 // ── SOLICITAÇÕES DE EMBALAGENS ──────────────────────────
 async function loadSolicitacoes(){
