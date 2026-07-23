@@ -629,6 +629,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
   <div id="tab-inventario" class="page">
     <div class="page-header">
       <div><div class="page-title">Inventário de Embalagens</div><div class="page-sub">Apuração e ajuste de saldo por cliente</div></div>
+      <button class="btn btn-secondary" id="btn-import-inv" style="display:none" onclick="openModalImportInv()">📥 Importar planilha</button>
     </div>
  
     <div id="inv-no-access" class="access-denied" style="display:none;">
@@ -650,10 +651,10 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
           <table>
             <thead><tr>
               <th>Embalagem</th>
-              <th class="col-cheias">Saldo Atual CHEIAS</th>
-              <th class="col-cheias">Novo Saldo Apurado · CHEIAS</th>
               <th class="col-vazias">Saldo Atual VAZIAS</th>
               <th class="col-vazias">Novo Saldo Apurado · VAZIAS</th>
+              <th class="col-cheias">Saldo Atual CHEIAS</th>
+              <th class="col-cheias">Novo Saldo Apurado · CHEIAS</th>
             </tr></thead>
             <tbody id="inv-grid"></tbody>
           </table>
@@ -895,6 +896,31 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
   </div>
 </div>
  
+<!-- MODAL IMPORTAR PLANILHA DE CONTAGEM (INVENTÁRIO) -->
+<div id="modal-import-inv" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-import-inv')">✕</button>
+    <div class="modal-title">📥 Importar planilha de contagem</div>
+    <div id="modal-import-inv-error" class="error-msg"></div>
+    <div class="field">
+      <label>ARQUIVO EXCEL (.xlsx / .xls)</label>
+      <div class="single-upload-zone" onclick="document.getElementById('import-inv-file').click()">
+        <input type="file" id="import-inv-file" accept=".xlsx,.xls" onchange="handleImportInvFile(this)" style="display:none">
+        <span class="su-placeholder" id="import-inv-file-label">📄 Selecionar arquivo…</span>
+      </div>
+    </div>
+    <div style="color:var(--text2);font-size:12px;line-height:1.6;margin-top:4px;">
+      A planilha deve conter as colunas nesta ordem, a partir da 2ª linha (a 1ª é o cabeçalho):<br>
+      <span style="font-family:var(--font-mono);color:var(--text3)">CÓDIGO DA EMBALAGEM · QUANTIDADE VAZIAS · QUANTIDADE CHEIAS</span><br>
+      A ordem das linhas na planilha não importa — a identificação de cada embalagem é feita pelo código. Os campos são apenas preenchidos na tela; nada é gravado até você clicar em "Confirmar Inventário".
+    </div>
+    <div id="import-inv-summary" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:14px;font-size:13px;color:var(--text2);"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-import-inv')">Fechar</button>
+    </div>
+  </div>
+</div>
+ 
 <!-- MODAL BAIXA DE SALDO -->
 <div id="modal-baixa" class="modal-overlay">
   <div class="modal" style="max-width:480px;">
@@ -1127,6 +1153,8 @@ function applyRoleUI() {
   const invWrap = document.getElementById('inv-wrap');
   if (invNoAccess) invNoAccess.style.display = canAdmin ? 'none' : 'block';
   if (invWrap) invWrap.style.display = canAdmin ? 'block' : 'none';
+  const btnImportInv = document.getElementById('btn-import-inv');
+  if (btnImportInv) btnImportInv.style.display = canAdmin ? 'inline-flex' : 'none';
 }
  
 // ── AUTH FUNCTIONS ─────────────────────────────────────
@@ -2556,10 +2584,10 @@ window.renderInventario = () => {
     const vaziasAtual = getSaldoVazias(e);
     return `<tr>
       <td><div style="font-family:var(--font-mono);font-size:13px">${esc(e.codigo)}</div><div style="font-size:12px;color:var(--text2)">${esc(e.descricao||'–')}</div></td>
-      <td class="col-cheias" style="font-family:var(--font-mono);font-weight:700;color:${cheiasAtual>0?'var(--accent)':'var(--text2)'}">${cheiasAtual}</td>
-      <td class="col-cheias"><input type="number" class="inv-input inv-cheias" min="0" value="${cheiasAtual}" data-emb-id="${e.id}" data-atual="${cheiasAtual}" ${canAdmin?'':'readonly'} oninput="onInvInputChange(this)"></td>
       <td class="col-vazias" style="font-family:var(--font-mono);font-weight:700;color:${vaziasAtual>0?'#60a5fa':'var(--text2)'}">${vaziasAtual}</td>
       <td class="col-vazias"><input type="number" class="inv-input inv-vazias" min="0" value="${vaziasAtual}" data-emb-id="${e.id}" data-atual="${vaziasAtual}" ${canAdmin?'':'readonly'} oninput="onInvInputChange(this)"></td>
+      <td class="col-cheias" style="font-family:var(--font-mono);font-weight:700;color:${cheiasAtual>0?'var(--accent)':'var(--text2)'}">${cheiasAtual}</td>
+      <td class="col-cheias"><input type="number" class="inv-input inv-cheias" min="0" value="${cheiasAtual}" data-emb-id="${e.id}" data-atual="${cheiasAtual}" ${canAdmin?'':'readonly'} oninput="onInvInputChange(this)"></td>
     </tr>`;
   }).join('');
 };
@@ -2570,6 +2598,90 @@ window.onInvInputChange = (input) => {
   const novo = Number(input.value);
   input.classList.toggle('inv-changed', !isNaN(novo) && novo !== atual);
 };
+
+// ── IMPORTAR PLANILHA DE CONTAGEM (INVENTÁRIO — apenas administrador) ───
+// A planilha apenas PREENCHE os campos de "Novo Saldo Apurado" já renderizados na tela;
+// nada é gravado no Firestore aqui — a gravação só ocorre em confirmarInventario().
+window.openModalImportInv = () => {
+  if(window._userRole!=='administrador') return;
+  const cliId = document.getElementById('inv-cli')?.value||'';
+  if(!cliId){ showToast('⚠ Selecione um cliente antes de importar a planilha.', true); return; }
+  document.getElementById('modal-import-inv-error').style.display='none';
+  document.getElementById('import-inv-summary').style.display='none';
+  document.getElementById('import-inv-file').value='';
+  document.getElementById('import-inv-file-label').textContent='📄 Selecionar arquivo…';
+  document.getElementById('modal-import-inv').classList.add('open');
+};
+
+window.handleImportInvFile = (input) => {
+  const errEl=document.getElementById('modal-import-inv-error'); errEl.style.display='none';
+  document.getElementById('import-inv-summary').style.display='none';
+  const file=input.files?.[0];
+  if(!file) return;
+  document.getElementById('import-inv-file-label').textContent='📄 '+file.name;
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      // ignora a 1ª linha (cabeçalho) e linhas totalmente vazias
+      const dataRows=rows.slice(1).filter(r=>r.some(c=>String(c).trim()!==''));
+      if(!dataRows.length){showErr(errEl,'Nenhuma linha de dados encontrada na planilha.');return;}
+      aplicarImportInv(dataRows);
+    }catch(e){showErr(errEl,'Erro ao ler o arquivo: '+e.message);}
+  };
+  reader.onerror=()=>showErr(errEl,'Erro ao ler o arquivo.');
+  reader.readAsArrayBuffer(file);
+};
+
+// aplica os valores lidos da planilha diretamente nos inputs de "Novo Saldo Apurado" já em tela,
+// identificando cada linha pelo código da embalagem (a ordem das linhas na planilha não importa)
+function aplicarImportInv(rows){
+  const errEl = document.getElementById('modal-import-inv-error');
+  // garante que todas as embalagens do cliente estejam visíveis na grade (limpa busca por código, se houver)
+  const filtroEl = document.getElementById('inv-filtro-cod');
+  if(filtroEl && filtroEl.value){ filtroEl.value=''; renderInventario(); }
+
+  const mapa = {}; // codigo (upper) -> {vazias, cheias}
+  rows.forEach(r=>{
+    const codigo = String(r[0]??'').trim().toUpperCase();
+    if(!codigo) return;
+    const vRaw = r[1], cRaw = r[2];
+    const vazias = (vRaw===undefined||vRaw===null||String(vRaw).trim()==='') ? null : (Number(vRaw)||0);
+    const cheias = (cRaw===undefined||cRaw===null||String(cRaw).trim()==='') ? null : (Number(cRaw)||0);
+    mapa[codigo] = { vazias, cheias };
+  });
+
+  if(!Object.keys(mapa).length){ showErr(errEl,'Nenhum código de embalagem válido encontrado na planilha.'); return; }
+
+  let aplicadas = 0;
+  const codigosUsados = new Set();
+  document.querySelectorAll('#inv-grid tr').forEach(tr=>{
+    const vaziasInput = tr.querySelector('.inv-vazias');
+    const cheiasInput = tr.querySelector('.inv-cheias');
+    if(!vaziasInput || !cheiasInput) return;
+    const embId = vaziasInput.dataset.embId;
+    const emb = window._embCat.find(e=>e.id===embId);
+    if(!emb) return;
+    const codigo = (emb.codigo||'').toUpperCase();
+    const dado = mapa[codigo];
+    if(!dado) return;
+    codigosUsados.add(codigo);
+    let mudou = false;
+    if(dado.vazias!==null && !vaziasInput.readOnly){ vaziasInput.value = dado.vazias; onInvInputChange(vaziasInput); mudou = true; }
+    if(dado.cheias!==null && !cheiasInput.readOnly){ cheiasInput.value = dado.cheias; onInvInputChange(cheiasInput); mudou = true; }
+    if(mudou) aplicadas++;
+  });
+
+  const naoEncontrados = Object.keys(mapa).filter(cod=>!codigosUsados.has(cod));
+  const summary = document.getElementById('import-inv-summary');
+  summary.style.display='block';
+  summary.textContent = `✓ ${aplicadas} embalagem(ns) preenchida(s) com os valores da planilha.`
+    + (naoEncontrados.length ? ` ${naoEncontrados.length} código(s) não encontrado(s) para este cliente: ${naoEncontrados.join(', ')}.` : '')
+    + ' Revise os valores e clique em "Confirmar Inventário" para gravar.';
+  showToast('✓ Planilha de contagem importada. Confira e confirme o inventário.');
+}
  
 // ── CONFIRMAR INVENTÁRIO (Etapa 2 + Etapa 3) ────────────
 // Para cada embalagem com valor apurado diferente do saldo atual:
@@ -3019,7 +3131,7 @@ window.showToast=(msg,error=false)=>{const t=document.getElementById('toast');t.
 function showErr(el,msg){el.style.display='block';el.textContent=msg;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
  
-['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico','modal-cliente-embalagens'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
+['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-import-inv','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico','modal-cliente-embalagens'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
 document.getElementById('img-viewer')?.addEventListener('click',function(e){if(e.target===this)closeImgViewer();});
 </script>
 </body>
