@@ -629,7 +629,6 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
   <div id="tab-inventario" class="page">
     <div class="page-header">
       <div><div class="page-title">Inventário de Embalagens</div><div class="page-sub">Apuração e ajuste de saldo por cliente</div></div>
-      <button class="btn btn-secondary" id="btn-import-inv" style="display:none" onclick="openModalImportInv()">📥 Importar planilha</button>
     </div>
  
     <div id="inv-no-access" class="access-denied" style="display:none;">
@@ -651,10 +650,10 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
           <table>
             <thead><tr>
               <th>Embalagem</th>
-              <th class="col-vazias">Saldo Atual VAZIAS</th>
-              <th class="col-vazias">Novo Saldo Apurado · VAZIAS</th>
               <th class="col-cheias">Saldo Atual CHEIAS</th>
               <th class="col-cheias">Novo Saldo Apurado · CHEIAS</th>
+              <th class="col-vazias">Saldo Atual VAZIAS</th>
+              <th class="col-vazias">Novo Saldo Apurado · VAZIAS</th>
             </tr></thead>
             <tbody id="inv-grid"></tbody>
           </table>
@@ -896,31 +895,6 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
   </div>
 </div>
  
-<!-- MODAL IMPORTAR PLANILHA DE CONTAGEM (INVENTÁRIO) -->
-<div id="modal-import-inv" class="modal-overlay">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('modal-import-inv')">✕</button>
-    <div class="modal-title">📥 Importar planilha de contagem</div>
-    <div id="modal-import-inv-error" class="error-msg"></div>
-    <div class="field">
-      <label>ARQUIVO EXCEL (.xlsx / .xls)</label>
-      <div class="single-upload-zone" onclick="document.getElementById('import-inv-file').click()">
-        <input type="file" id="import-inv-file" accept=".xlsx,.xls" onchange="handleImportInvFile(this)" style="display:none">
-        <span class="su-placeholder" id="import-inv-file-label">📄 Selecionar arquivo…</span>
-      </div>
-    </div>
-    <div style="color:var(--text2);font-size:12px;line-height:1.6;margin-top:4px;">
-      A planilha deve conter as colunas nesta ordem, a partir da 2ª linha (a 1ª é o cabeçalho):<br>
-      <span style="font-family:var(--font-mono);color:var(--text3)">CÓDIGO DA EMBALAGEM · QUANTIDADE VAZIAS · QUANTIDADE CHEIAS</span><br>
-      A ordem das linhas na planilha não importa — a identificação de cada embalagem é feita pelo código. Os campos são apenas preenchidos na tela; nada é gravado até você clicar em "Confirmar Inventário".
-    </div>
-    <div id="import-inv-summary" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:14px;font-size:13px;color:var(--text2);"></div>
-    <div style="display:flex;gap:10px;margin-top:16px;">
-      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-import-inv')">Fechar</button>
-    </div>
-  </div>
-</div>
- 
 <!-- MODAL BAIXA DE SALDO -->
 <div id="modal-baixa" class="modal-overlay">
   <div class="modal" style="max-width:480px;">
@@ -1049,7 +1023,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, updateDoc, query, orderBy, where, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, updateDoc, query, orderBy, where, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
  
 const firebaseConfig = {
   apiKey: "AIzaSyAmX8gVADeGgS9SFBdN18Y1MmVwzIlC2tE",
@@ -1079,7 +1053,7 @@ window._clientes    = [];
 window._embCat      = [];
 window._baixas      = [];
 window._solicitacoes = [];
-window._inventarios  = [];
+window._ajustesInventario = [];
 window._fotos       = [];
 window._currentUser = null;
 window._userRole    = 'visualizador';
@@ -1112,7 +1086,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('f-user').value = user.displayName || user.email;
     applyRoleUI();
     initDatetime();
-    await Promise.all([loadClientes(), loadEmbCat(), loadRegistros(), loadConfiguracoes(), loadBaixas(), loadSolicitacoes(), loadInventarios()]);
+    await Promise.all([loadClientes(), loadEmbCat(), loadRegistros(), loadConfiguracoes(), loadBaixas(), loadSolicitacoes(), loadAjustesInventario()]);
     addEmbRow();
   } else {
     window._currentUser = null;
@@ -1153,8 +1127,6 @@ function applyRoleUI() {
   const invWrap = document.getElementById('inv-wrap');
   if (invNoAccess) invNoAccess.style.display = canAdmin ? 'none' : 'block';
   if (invWrap) invWrap.style.display = canAdmin ? 'block' : 'none';
-  const btnImportInv = document.getElementById('btn-import-inv');
-  if (btnImportInv) btnImportInv.style.display = canAdmin ? 'inline-flex' : 'none';
 }
  
 // ── AUTH FUNCTIONS ─────────────────────────────────────
@@ -1685,28 +1657,24 @@ function getTotalSolicitacoesAtendidas(emb){
   }
   return total;
 }
-// Ajustes de inventário (Etapa 3) — diferença líquida lançada em "Confirmar Inventário" (pode ser positiva ou negativa)
-function getTotalAjusteInventarioVazias(emb){
-  let total = 0;
-  for(const inv of (window._inventarios||[])){
-    if(inv.codigo===emb.codigo && inv.clienteId===emb.clienteId) total += Number(inv.diffVazias)||0;
-  }
-  return total;
+// Saldo VAZIAS calculado a partir do histórico (registros + baixas + solicitações atendidas).
+// Usado apenas como FALLBACK/MIGRAÇÃO para embalagens que ainda não possuem o campo
+// persistido `saldoVazias` gravado via transação (ver runTransaction em confirmarBaixa/confirmarAtender).
+function computeSaldoVaziasFromHistorico(emb){
+  return getTotalEntradas(emb) - getTotalBaixasVazias(emb) - getTotalSolicitacoesAtendidas(emb);
 }
-function getTotalAjusteInventarioCheias(emb){
-  let total = 0;
-  for(const inv of (window._inventarios||[])){
-    if(inv.codigo===emb.codigo && inv.clienteId===emb.clienteId) total += Number(inv.diffCheias)||0;
-  }
-  return total;
+// Saldo CHEIAS calculado a partir do histórico — mesmo propósito de fallback/migração descrito acima.
+function computeSaldoCheiasFromHistorico(emb){
+  return getTotalSolicitacoesAtendidas(emb) - getTotalBaixasCheias(emb);
 }
-// Saldo VAZIAS: entradas (+Registro) menos baixas manuais de vazias menos o que já foi transferido para CHEIAS via atendimento, mais/menos ajustes de inventário
+// Saldo VAZIAS: prioriza o valor persistido no documento (fonte de verdade após a 1ª transação
+// gravada nele); se ainda não existir, calcula a partir do histórico (compatibilidade com dados antigos).
 function getSaldoVazias(emb){
-  return getTotalEntradas(emb) - getTotalBaixasVazias(emb) - getTotalSolicitacoesAtendidas(emb) + getTotalAjusteInventarioVazias(emb);
+  return (emb.saldoVazias!=null) ? Number(emb.saldoVazias) : computeSaldoVaziasFromHistorico(emb);
 }
-// Saldo CHEIAS: soma das solicitações atendidas (a quantidade atendida "vira" cheia) menos baixas manuais de cheias, mais/menos ajustes de inventário
+// Saldo CHEIAS: mesma lógica de prioridade do saldo persistido descrita acima.
 function getSaldoCheias(emb){
-  return getTotalSolicitacoesAtendidas(emb) - getTotalBaixasCheias(emb) + getTotalAjusteInventarioCheias(emb);
+  return (emb.saldoCheias!=null) ? Number(emb.saldoCheias) : computeSaldoCheiasFromHistorico(emb);
 }
 // Saldo TOTAL = Cheias + Vazias
 function getSaldoTotal(emb){
@@ -1725,15 +1693,6 @@ async function loadBaixas(){
   }catch(e){ console.error('loadBaixas:',e); }
 }
 window.loadBaixas = loadBaixas;
- 
-// ── MOVIMENTAÇÕES DE INVENTÁRIO (Etapa 3) ────────────────
-async function loadInventarios(){
-  try{
-    const snap = await getDocs(query(collection(db,'movimentacoes_inventario'),orderBy('timestamp','desc')));
-    window._inventarios = snap.docs.map(d=>({id:d.id,...d.data()}));
-  }catch(e){ console.error('loadInventarios:',e); }
-}
-window.loadInventarios = loadInventarios;
  
 // filtro reutilizável da Baixa de Saldo (usado na renderização e na exportação)
 function getFilteredBaixaSaldo(){
@@ -1862,32 +1821,63 @@ window.confirmarBaixa = async () => {
   const qtdVazias = Number(document.getElementById('baixa-qtd-vazias').value)||0;
   const qtdCheias = Number(document.getElementById('baixa-qtd-cheias').value)||0;
   const obs       = document.getElementById('baixa-obs').value.trim();
-  const e = window._embCat.find(x=>x.id===embCatId);
-  if(!e){ showErr(errEl,'Embalagem não encontrada.'); return; }
- 
-  // revalida o saldo no momento da confirmação, usando os dados mais recentes em memória
-  const saldoVazioAtual = getSaldoVazias(e);
-  const saldoCheioAtual = getSaldoCheias(e);
-  if(qtdVazias > saldoVazioAtual){ showErr(errEl, `Quantidade de VAZIAS maior que o saldo disponível (${saldoVazioAtual}).`); return; }
-  if(qtdCheias > saldoCheioAtual){ showErr(errEl, `Quantidade de CHEIAS maior que o saldo disponível (${saldoCheioAtual}).`); return; }
+  const eLocal = window._embCat.find(x=>x.id===embCatId);
+  if(!eLocal){ showErr(errEl,'Embalagem não encontrada.'); return; }
   if(qtdVazias<=0 && qtdCheias<=0){ showErr(errEl, 'Informe uma quantidade maior que zero em Vazias ou em Cheias.'); return; }
  
   const cli = window._clientes.find(c=>c.id===clienteId);
   const btn = document.getElementById('btn-confirmar-baixa');
   btn.disabled = true; btn.textContent = 'Salvando...';
+ 
+  const embRef = doc(db,'embalagensCat', embCatId);
+  const novaBaixaRef = doc(collection(db,'baixas_embalagens')); // gera o ID antecipadamente para gravar dentro da transação
+  const dataHora = formatDt(new Date());
+  const usuario = window._currentUser.displayName || window._currentUser.email;
+  const qtdTotalBaixada = qtdVazias + qtdCheias;
+ 
   try{
-    const dataHora = formatDt(new Date());
-    const usuario = window._currentUser.displayName || window._currentUser.email;
-    const qtdTotalBaixada = qtdVazias + qtdCheias;
-    const novaBaixa = {
-      dataHora, timestamp: serverTimestamp(),
+    let saldoVaziasApos, saldoCheiasApos;
+    // runTransaction garante leitura + validação + escrita atômicas, evitando que duas baixas
+    // simultâneas leiam o mesmo saldo "antigo" e ambas passem na validação (race condition).
+    await runTransaction(db, async (transaction) => {
+      const embSnap = await transaction.get(embRef);
+      if(!embSnap.exists()) throw new Error('Embalagem não encontrada no banco de dados.');
+      const embData = embSnap.data();
+ 
+      // saldo atual real (server): usa o campo persistido se já existir; caso contrário
+      // calcula a partir do histórico (migração — primeira transação gravada nesta embalagem)
+      const saldoVaziasAtual = (embData.saldoVazias!=null) ? Number(embData.saldoVazias) : computeSaldoVaziasFromHistorico({...eLocal, ...embData});
+      const saldoCheiasAtual = (embData.saldoCheias!=null) ? Number(embData.saldoCheias) : computeSaldoCheiasFromHistorico({...eLocal, ...embData});
+ 
+      if(qtdVazias > saldoVaziasAtual) throw new Error(`Quantidade de VAZIAS maior que o saldo disponível (${saldoVaziasAtual}).`);
+      if(qtdCheias > saldoCheiasAtual) throw new Error(`Quantidade de CHEIAS maior que o saldo disponível (${saldoCheiasAtual}).`);
+ 
+      saldoVaziasApos = saldoVaziasAtual - qtdVazias;
+      saldoCheiasApos = saldoCheiasAtual - qtdCheias;
+      if(saldoVaziasApos < 0 || saldoCheiasApos < 0) throw new Error('Operação resultaria em saldo negativo.');
+ 
+      transaction.update(embRef, { saldoVazias: saldoVaziasApos, saldoCheias: saldoCheiasApos });
+      transaction.set(novaBaixaRef, {
+        dataHora, timestamp: serverTimestamp(),
+        usuario, uid: window._currentUser.uid,
+        clienteId, clienteNome: cli?.nome||'',
+        codigo, embCatId,
+        qtdVazias, qtdCheias, qtdTotalBaixada, obs,
+        saldoVaziasApos, saldoCheiasApos
+      });
+    });
+ 
+    // reflete localmente o resultado já confirmado pela transação, sem precisar recarregar tudo do Firestore
+    const idx = window._embCat.findIndex(x=>x.id===embCatId);
+    if(idx>-1) window._embCat[idx] = { ...window._embCat[idx], saldoVazias: saldoVaziasApos, saldoCheias: saldoCheiasApos };
+    window._baixas.unshift({
+      id: novaBaixaRef.id, dataHora, timestamp: new Date(),
       usuario, uid: window._currentUser.uid,
       clienteId, clienteNome: cli?.nome||'',
-      codigo,
-      qtdVazias, qtdCheias, qtdTotalBaixada, obs
-    };
-    await addDoc(collection(db,'baixas_embalagens'), novaBaixa);
-    window._baixas.unshift({ ...novaBaixa, timestamp:new Date() });
+      codigo, embCatId, qtdVazias, qtdCheias, qtdTotalBaixada, obs,
+      saldoVaziasApos, saldoCheiasApos
+    });
+ 
     showToast('✓ Baixa registrada!');
     limparFormBaixa();
     closeModal('modal-baixa');
@@ -1895,7 +1885,7 @@ window.confirmarBaixa = async () => {
     renderBaixaSaldo();
     if (document.getElementById('embcat-grid')) renderEmbCat();
   }catch(err){
-    showErr(errEl, 'Erro: '+(err.code||err.message));
+    showErr(errEl, err.message || ('Erro: '+(err.code||'')));
   }finally{
     btn.disabled=false; btn.textContent='Confirmar Baixa';
   }
@@ -1915,7 +1905,7 @@ window._historicoPage = 1;
 window._historicoRows = [];
 const HIST_PAGE_SIZE = 20;
  
-// monta a lista de movimentações (entradas, baixas manuais e atendimentos) de uma embalagem específica
+// monta a lista de movimentações (entradas, baixas manuais, atendimentos e ajustes de inventário) de uma embalagem específica
 function buildHistoricoMovimentacoes(emb, cliNome){
   const rows = [];
   // Entradas (+Registro)
@@ -1926,7 +1916,7 @@ function buildHistoricoMovimentacoes(emb, cliNome){
       if(itCli!==emb.clienteId) continue;
       rows.push({
         codigo: emb.codigo, cliente: cliNome,
-        qtd: Number(item.qtd)||0, tipo: 'Entrada',
+        qtd: Number(item.qtd)||0, tipo: 'Entrada', direcao: 'entrada',
         usuario: r.usuario||'–', data: r.dataHora||'–',
         sortTs: parseDataHoraToSortable(r.dataHora)
       });
@@ -1938,39 +1928,27 @@ function buildHistoricoMovimentacoes(emb, cliNome){
     const qv = (b.qtdVazias!=null) ? (Number(b.qtdVazias)||0) : (Number(b.qtd)||0);
     const qc = Number(b.qtdCheias)||0;
     const ts = parseDataHoraToSortable(b.dataHora);
-    if(qv>0) rows.push({codigo:emb.codigo, cliente:cliNome, qtd:qv, tipo:'Saída – Baixa (Vazias)', usuario:b.usuario||'–', data:b.dataHora||'–', sortTs:ts});
-    if(qc>0) rows.push({codigo:emb.codigo, cliente:cliNome, qtd:qc, tipo:'Saída – Baixa (Cheias)', usuario:b.usuario||'–', data:b.dataHora||'–', sortTs:ts});
+    if(qv>0) rows.push({codigo:emb.codigo, cliente:cliNome, qtd:qv, tipo:'Saída – Baixa (Vazias)', direcao:'saida', usuario:b.usuario||'–', data:b.dataHora||'–', sortTs:ts});
+    if(qc>0) rows.push({codigo:emb.codigo, cliente:cliNome, qtd:qc, tipo:'Saída – Baixa (Cheias)', direcao:'saida', usuario:b.usuario||'–', data:b.dataHora||'–', sortTs:ts});
   }
   // Solicitações atendidas (transferem de VAZIAS para CHEIAS)
   for(const s of (window._solicitacoes||[])){
     if(s.status!=='ATENDIDO' || s.codigo!==emb.codigo || s.clienteId!==emb.clienteId) continue;
     rows.push({
       codigo: emb.codigo, cliente: cliNome,
-      qtd: Number(s.qtdAtendida)||0, tipo: 'Saída – Atendimento (Vazia→Cheia)',
+      qtd: Number(s.qtdAtendida)||0, tipo: 'Saída – Atendimento (Vazia→Cheia)', direcao: 'saida',
       usuario: s.atendidoPor||'–', data: s.atendidoData||'–',
       sortTs: parseDataHoraToSortable(s.atendidoData)
     });
   }
-  // Ajustes de inventário (Etapa 3) — vazias e cheias tratados separadamente, cada um com seu próprio tipo (entrada/baixa)
-  for(const inv of (window._inventarios||[])){
-    if(inv.codigo!==emb.codigo || inv.clienteId!==emb.clienteId) continue;
-    const ts = parseDataHoraToSortable(inv.dataHora);
-    const dv = Number(inv.diffVazias)||0;
-    const dc = Number(inv.diffCheias)||0;
-    if(dv!==0){
-      rows.push({
-        codigo: emb.codigo, cliente: cliNome, qtd: Math.abs(dv),
-        tipo: (dv>0?'Entrada por Inventário':'Baixa por Inventário')+' (Vazias)',
-        usuario: inv.usuario||'–', data: inv.dataHora||'–', sortTs: ts
-      });
-    }
-    if(dc!==0){
-      rows.push({
-        codigo: emb.codigo, cliente: cliNome, qtd: Math.abs(dc),
-        tipo: (dc>0?'Entrada por Inventário':'Baixa por Inventário')+' (Cheias)',
-        usuario: inv.usuario||'–', data: inv.dataHora||'–', sortTs: ts
-      });
-    }
+  // Ajustes de Inventário (apuração física — pode aumentar ou diminuir cada saldo)
+  for(const a of (window._ajustesInventario||[])){
+    if(a.codigo!==emb.codigo || a.clienteId!==emb.clienteId) continue;
+    const ts = parseDataHoraToSortable(a.dataHora);
+    const diffCheias = (Number(a.cheiasDepois)||0) - (Number(a.cheiasAntes)||0);
+    const diffVazias = (Number(a.vaziasDepois)||0) - (Number(a.vaziasAntes)||0);
+    if(diffCheias!==0) rows.push({codigo:emb.codigo, cliente:cliNome, qtd:Math.abs(diffCheias), tipo:`Ajuste de Inventário · Cheias (${diffCheias>0?'+':'-'}${Math.abs(diffCheias)})`, direcao: diffCheias>0?'entrada':'saida', usuario:a.usuario||'–', data:a.dataHora||'–', sortTs:ts});
+    if(diffVazias!==0) rows.push({codigo:emb.codigo, cliente:cliNome, qtd:Math.abs(diffVazias), tipo:`Ajuste de Inventário · Vazias (${diffVazias>0?'+':'-'}${Math.abs(diffVazias)})`, direcao: diffVazias>0?'entrada':'saida', usuario:a.usuario||'–', data:a.dataHora||'–', sortTs:ts});
   }
   return rows;
 }
@@ -2037,7 +2015,7 @@ function renderHistorico(){
   const pageRows = sorted.slice(startIdx, startIdx + HIST_PAGE_SIZE);
  
   grid.innerHTML = pageRows.map(row=>{
-    const isEntrada = row.tipo === 'Entrada' || row.tipo.startsWith('Entrada por Inventário');
+    const isEntrada = row.direcao === 'entrada';
     return `<tr>
       <td style="font-family:var(--font-mono);font-size:13px">${esc(row.codigo)}</td>
       <td style="color:var(--accent)">${esc(row.cliente)}</td>
@@ -2063,6 +2041,15 @@ async function loadSolicitacoes(){
   }catch(e){ console.error('loadSolicitacoes:',e); }
 }
 window.loadSolicitacoes = loadSolicitacoes;
+ 
+// ── AJUSTES DE INVENTÁRIO (histórico de apurações) ──────
+async function loadAjustesInventario(){
+  try{
+    const snap = await getDocs(query(collection(db,'ajustes_inventario'),orderBy('timestamp','desc')));
+    window._ajustesInventario = snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){ console.error('loadAjustesInventario:',e); }
+}
+window.loadAjustesInventario = loadAjustesInventario;
  
 window.onSolClienteChange = () => {
   const cliId = document.getElementById('sol-cli').value;
@@ -2183,7 +2170,7 @@ window.sortSolicitacoes=(field)=>{
 };
 window.openModalAtender = (id) => {
   const s = window._solicitacoes.find(x=>x.id===id); if(!s) return;
-  const e = window._embCat.find(x=>x.codigo===s.codigo && x.clienteId===s.clienteId);
+  const e = window._embCat.find(x=>x.id===s.embCatId) || window._embCat.find(x=>x.codigo===s.codigo && x.clienteId===s.clienteId);
   const saldo = e ? getSaldoDisponivel(e) : 0;
   document.getElementById('modal-atender-error').style.display='none';
   document.getElementById('atender-info-cliente').textContent = s.clienteNome||'–';
@@ -2207,27 +2194,64 @@ window.confirmarAtender = async () => {
   if(s.status==='ATENDIDO'){ showErr(errEl,'Esta solicitação já foi atendida.'); return; }
   if(!qtdRaw || isNaN(Number(qtdRaw)) || Number(qtdRaw)<=0){ showErr(errEl,'Informe uma quantidade válida.'); return; }
   const qtd = Number(qtdRaw);
-  const e = window._embCat.find(x=>x.codigo===s.codigo && x.clienteId===s.clienteId);
-  // revalida o saldo no momento da confirmação, usando os dados mais recentes em memória
-  const saldoAtual = e ? getSaldoDisponivel(e) : 0;
-  if(qtd > saldoAtual){ showErr(errEl, `Quantidade maior que o saldo disponível (${saldoAtual}).`); return; }
+  // embCatId é gravado na solicitação desde a criação; fallback por código+cliente cobre registros antigos
+  const embCatId = s.embCatId || window._embCat.find(x=>x.codigo===s.codigo && x.clienteId===s.clienteId)?.id;
+  if(!embCatId){ showErr(errEl,'Embalagem vinculada não encontrada no catálogo.'); return; }
+  const eLocal = window._embCat.find(x=>x.id===embCatId);
  
   const btn = document.getElementById('btn-confirmar-atender');
   btn.disabled = true; btn.textContent = 'Salvando...';
+ 
+  const embRef = doc(db,'embalagensCat', embCatId);
+  const solRef = doc(db,'solicitacoes_embalagens', id);
+  let saldoVaziasApos, saldoCheiasApos, dataHora, usuario;
+ 
   try{
-    const dataHora = formatDt(new Date());
-    const usuario = window._currentUser.displayName || window._currentUser.email;
-    await updateDoc(doc(db,'solicitacoes_embalagens',id), {
-      status: 'ATENDIDO', qtdAtendida: qtd,
-      atendidoPor: usuario, atendidoUid: window._currentUser.uid, atendidoData: dataHora
+    // runTransaction garante que a leitura do saldo e do status da solicitação, a validação
+    // e as duas escritas (embalagem + solicitação) ocorram atomicamente, evitando que dois
+    // atendimentos simultâneos da mesma solicitação/saldo sejam ambos aprovados.
+    await runTransaction(db, async (transaction) => {
+      const embSnap = await transaction.get(embRef);
+      if(!embSnap.exists()) throw new Error('Embalagem não encontrada no banco de dados.');
+      const solSnap = await transaction.get(solRef);
+      if(!solSnap.exists()) throw new Error('Solicitação não encontrada no banco de dados.');
+      const solData = solSnap.data();
+      if(solData.status !== 'PENDENTE') throw new Error('Esta solicitação já foi processada.');
+ 
+      const embData = embSnap.data();
+      // migração: se ainda não houver saldo persistido, usa o calculado a partir do histórico
+      const saldoVaziasAtual = (embData.saldoVazias!=null) ? Number(embData.saldoVazias) : computeSaldoVaziasFromHistorico({...eLocal, ...embData});
+      const saldoCheiasAtual = (embData.saldoCheias!=null) ? Number(embData.saldoCheias) : computeSaldoCheiasFromHistorico({...eLocal, ...embData});
+ 
+      if(qtd > saldoVaziasAtual) throw new Error(`Quantidade maior que o saldo disponível (${saldoVaziasAtual}).`);
+ 
+      // atendimento transfere de VAZIAS para CHEIAS
+      saldoVaziasApos = saldoVaziasAtual - qtd;
+      saldoCheiasApos = saldoCheiasAtual + qtd;
+      if(saldoVaziasApos < 0) throw new Error('Operação resultaria em saldo negativo.');
+ 
+      dataHora = formatDt(new Date());
+      usuario  = window._currentUser.displayName || window._currentUser.email;
+ 
+      transaction.update(embRef, { saldoVazias: saldoVaziasApos, saldoCheias: saldoCheiasApos });
+      transaction.update(solRef, {
+        status: 'ATENDIDO', qtdAtendida: qtd,
+        atendidoPor: usuario, atendidoUid: window._currentUser.uid, atendidoData: dataHora
+      });
     });
+ 
+    // reflete localmente o resultado já confirmado pela transação
     Object.assign(s, { status:'ATENDIDO', qtdAtendida: qtd, atendidoPor: usuario, atendidoUid: window._currentUser.uid, atendidoData: dataHora });
+    const idx = window._embCat.findIndex(x=>x.id===embCatId);
+    if(idx>-1) window._embCat[idx] = { ...window._embCat[idx], saldoVazias: saldoVaziasApos, saldoCheias: saldoCheiasApos };
+ 
     showToast('✓ Solicitação atendida!');
     closeModal('modal-atender');
     renderSolicitacoes();
     if(document.getElementById('tab-baixa')?.classList.contains('active')) renderBaixaSaldo();
+    if (document.getElementById('embcat-grid')) renderEmbCat();
   }catch(err){
-    showErr(errEl, 'Erro: '+(err.code||err.message));
+    showErr(errEl, err.message || ('Erro: '+(err.code||'')));
   }finally{
     btn.disabled=false; btn.textContent='Confirmar Atendimento';
   }
@@ -2584,10 +2608,10 @@ window.renderInventario = () => {
     const vaziasAtual = getSaldoVazias(e);
     return `<tr>
       <td><div style="font-family:var(--font-mono);font-size:13px">${esc(e.codigo)}</div><div style="font-size:12px;color:var(--text2)">${esc(e.descricao||'–')}</div></td>
-      <td class="col-vazias" style="font-family:var(--font-mono);font-weight:700;color:${vaziasAtual>0?'#60a5fa':'var(--text2)'}">${vaziasAtual}</td>
-      <td class="col-vazias"><input type="number" class="inv-input inv-vazias" min="0" value="${vaziasAtual}" data-emb-id="${e.id}" data-atual="${vaziasAtual}" ${canAdmin?'':'readonly'} oninput="onInvInputChange(this)"></td>
       <td class="col-cheias" style="font-family:var(--font-mono);font-weight:700;color:${cheiasAtual>0?'var(--accent)':'var(--text2)'}">${cheiasAtual}</td>
       <td class="col-cheias"><input type="number" class="inv-input inv-cheias" min="0" value="${cheiasAtual}" data-emb-id="${e.id}" data-atual="${cheiasAtual}" ${canAdmin?'':'readonly'} oninput="onInvInputChange(this)"></td>
+      <td class="col-vazias" style="font-family:var(--font-mono);font-weight:700;color:${vaziasAtual>0?'#60a5fa':'var(--text2)'}">${vaziasAtual}</td>
+      <td class="col-vazias"><input type="number" class="inv-input inv-vazias" min="0" value="${vaziasAtual}" data-emb-id="${e.id}" data-atual="${vaziasAtual}" ${canAdmin?'':'readonly'} oninput="onInvInputChange(this)"></td>
     </tr>`;
   }).join('');
 };
@@ -2598,179 +2622,116 @@ window.onInvInputChange = (input) => {
   const novo = Number(input.value);
   input.classList.toggle('inv-changed', !isNaN(novo) && novo !== atual);
 };
-
-// ── IMPORTAR PLANILHA DE CONTAGEM (INVENTÁRIO — apenas administrador) ───
-// A planilha apenas PREENCHE os campos de "Novo Saldo Apurado" já renderizados na tela;
-// nada é gravado no Firestore aqui — a gravação só ocorre em confirmarInventario().
-window.openModalImportInv = () => {
-  if(window._userRole!=='administrador') return;
-  const cliId = document.getElementById('inv-cli')?.value||'';
-  if(!cliId){ showToast('⚠ Selecione um cliente antes de importar a planilha.', true); return; }
-  document.getElementById('modal-import-inv-error').style.display='none';
-  document.getElementById('import-inv-summary').style.display='none';
-  document.getElementById('import-inv-file').value='';
-  document.getElementById('import-inv-file-label').textContent='📄 Selecionar arquivo…';
-  document.getElementById('modal-import-inv').classList.add('open');
-};
-
-window.handleImportInvFile = (input) => {
-  const errEl=document.getElementById('modal-import-inv-error'); errEl.style.display='none';
-  document.getElementById('import-inv-summary').style.display='none';
-  const file=input.files?.[0];
-  if(!file) return;
-  document.getElementById('import-inv-file-label').textContent='📄 '+file.name;
-  const reader=new FileReader();
-  reader.onload=(ev)=>{
-    try{
-      const wb=XLSX.read(ev.target.result,{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      // ignora a 1ª linha (cabeçalho) e linhas totalmente vazias
-      const dataRows=rows.slice(1).filter(r=>r.some(c=>String(c).trim()!==''));
-      if(!dataRows.length){showErr(errEl,'Nenhuma linha de dados encontrada na planilha.');return;}
-      aplicarImportInv(dataRows);
-    }catch(e){showErr(errEl,'Erro ao ler o arquivo: '+e.message);}
-  };
-  reader.onerror=()=>showErr(errEl,'Erro ao ler o arquivo.');
-  reader.readAsArrayBuffer(file);
-};
-
-// aplica os valores lidos da planilha diretamente nos inputs de "Novo Saldo Apurado" já em tela,
-// identificando cada linha pelo código da embalagem (a ordem das linhas na planilha não importa)
-function aplicarImportInv(rows){
-  const errEl = document.getElementById('modal-import-inv-error');
-  // garante que todas as embalagens do cliente estejam visíveis na grade (limpa busca por código, se houver)
-  const filtroEl = document.getElementById('inv-filtro-cod');
-  if(filtroEl && filtroEl.value){ filtroEl.value=''; renderInventario(); }
-
-  const mapa = {}; // codigo (upper) -> {vazias, cheias}
-  rows.forEach(r=>{
-    const codigo = String(r[0]??'').trim().toUpperCase();
-    if(!codigo) return;
-    const vRaw = r[1], cRaw = r[2];
-    const vazias = (vRaw===undefined||vRaw===null||String(vRaw).trim()==='') ? null : (Number(vRaw)||0);
-    const cheias = (cRaw===undefined||cRaw===null||String(cRaw).trim()==='') ? null : (Number(cRaw)||0);
-    mapa[codigo] = { vazias, cheias };
-  });
-
-  if(!Object.keys(mapa).length){ showErr(errEl,'Nenhum código de embalagem válido encontrado na planilha.'); return; }
-
-  let aplicadas = 0;
-  const codigosUsados = new Set();
+ 
+// lê do DOM as linhas atualmente exibidas no grid de inventário (respeita a busca aplicada)
+function getInventarioRowsFromDOM(){
+  const rows = [];
   document.querySelectorAll('#inv-grid tr').forEach(tr=>{
-    const vaziasInput = tr.querySelector('.inv-vazias');
     const cheiasInput = tr.querySelector('.inv-cheias');
-    if(!vaziasInput || !cheiasInput) return;
-    const embId = vaziasInput.dataset.embId;
-    const emb = window._embCat.find(e=>e.id===embId);
-    if(!emb) return;
-    const codigo = (emb.codigo||'').toUpperCase();
-    const dado = mapa[codigo];
-    if(!dado) return;
-    codigosUsados.add(codigo);
-    let mudou = false;
-    if(dado.vazias!==null && !vaziasInput.readOnly){ vaziasInput.value = dado.vazias; onInvInputChange(vaziasInput); mudou = true; }
-    if(dado.cheias!==null && !cheiasInput.readOnly){ cheiasInput.value = dado.cheias; onInvInputChange(cheiasInput); mudou = true; }
-    if(mudou) aplicadas++;
+    const vaziasInput = tr.querySelector('.inv-vazias');
+    if(!cheiasInput || !vaziasInput) return;
+    const embCatId = cheiasInput.dataset.embId;
+    const cheiasAtual = Number(cheiasInput.dataset.atual)||0;
+    const vaziasAtual = Number(vaziasInput.dataset.atual)||0;
+    let cheiasNovo = Number(cheiasInput.value);
+    let vaziasNovo = Number(vaziasInput.value);
+    if(isNaN(cheiasNovo) || cheiasNovo<0) cheiasNovo = cheiasAtual;
+    if(isNaN(vaziasNovo) || vaziasNovo<0) vaziasNovo = vaziasAtual;
+    rows.push({ embCatId, cheiasAtual, vaziasAtual, cheiasNovo, vaziasNovo });
   });
-
-  const naoEncontrados = Object.keys(mapa).filter(cod=>!codigosUsados.has(cod));
-  const summary = document.getElementById('import-inv-summary');
-  summary.style.display='block';
-  summary.textContent = `✓ ${aplicadas} embalagem(ns) preenchida(s) com os valores da planilha.`
-    + (naoEncontrados.length ? ` ${naoEncontrados.length} código(s) não encontrado(s) para este cliente: ${naoEncontrados.join(', ')}.` : '')
-    + ' Revise os valores e clique em "Confirmar Inventário" para gravar.';
-  showToast('✓ Planilha de contagem importada. Confira e confirme o inventário.');
+  return rows;
 }
  
-// ── CONFIRMAR INVENTÁRIO (Etapa 2 + Etapa 3) ────────────
-// Para cada embalagem com valor apurado diferente do saldo atual:
-//  1) calcula a diferença (Novo Saldo Apurado - Saldo Anterior) para CHEIAS e VAZIAS separadamente;
-//  2) grava um registro de movimentação em 'movimentacoes_inventario' com tipo ENTRADA POR INVENTÁRIO
-//     (diferença > 0) ou BAIXA POR INVENTÁRIO (diferença < 0), com data/hora e usuário administrador;
-//  3) window._inventarios é atualizado localmente e os saldos (getSaldoVazias/getSaldoCheias) passam
-//     a refletir imediatamente o ajuste, pois eles somam a diferença líquida de todos os ajustes de inventário.
 window.confirmarInventario = async () => {
   if(window._userRole!=='administrador'){ showToast('Sem permissão.', true); return; }
   const cliId = document.getElementById('inv-cli')?.value||'';
-  if(!cliId){ showToast('⚠ Selecione um cliente.', true); return; }
-
-  // coleta os valores apurados a partir dos inputs atualmente renderizados na tabela
-  const changesById = {};
-  document.querySelectorAll('#inv-grid .inv-cheias').forEach(inp=>{
-    const embId = inp.dataset.embId;
-    const atual = Number(inp.dataset.atual)||0;
-    const novo  = Number(inp.value);
-    if(isNaN(novo) || novo<0) return; // saldo nunca pode ser negativo — ignora valores inválidos
-    (changesById[embId] ||= {embId}).atualCheias = atual;
-    changesById[embId].novoCheias = novo;
-  });
-  document.querySelectorAll('#inv-grid .inv-vazias').forEach(inp=>{
-    const embId = inp.dataset.embId;
-    const atual = Number(inp.dataset.atual)||0;
-    const novo  = Number(inp.value);
-    if(isNaN(novo) || novo<0) return;
-    (changesById[embId] ||= {embId}).atualVazias = atual;
-    changesById[embId].novoVazias = novo;
-  });
-
-  const toSave = Object.values(changesById).filter(c=>{
-    const diffCheias = (c.novoCheias??c.atualCheias??0) - (c.atualCheias??0);
-    const diffVazias = (c.novoVazias??c.atualVazias??0) - (c.atualVazias??0);
-    return diffCheias!==0 || diffVazias!==0;
-  });
-
-  if(!toSave.length){ showToast('Nenhuma alteração detectada no inventário.'); return; }
-
+  if(!cliId){ showToast('Selecione um cliente.', true); return; }
+  const cli = window._clientes.find(c=>c.id===cliId);
+ 
+  const todasLinhas = getInventarioRowsFromDOM();
+  const linhasAlteradas = todasLinhas.filter(r=>r.cheiasNovo!==r.cheiasAtual || r.vaziasNovo!==r.vaziasAtual);
+  if(!linhasAlteradas.length){ showToast('Nenhuma alteração para confirmar.'); return; }
+ 
   const btn = document.getElementById('btn-confirmar-inventario');
   btn.disabled = true; btn.textContent = 'Salvando...';
-
-  const cli = window._clientes.find(c=>c.id===cliId);
-  const usuario = window._currentUser.displayName || window._currentUser.email;
+ 
   const dataHora = formatDt(new Date());
-
+  const usuario  = window._currentUser.displayName || window._currentUser.email;
+  const uid      = window._currentUser.uid;
+ 
+  // 1 doc de embalagem (destino do novo saldo) + 1 doc de ajuste (histórico) por linha alterada
+  const refs = linhasAlteradas.map(r=>({
+    ...r,
+    embRef: doc(db,'embalagensCat', r.embCatId),
+    ajusteRef: doc(collection(db,'ajustes_inventario'))
+  }));
+ 
+  let resultados;
   try{
-    const batch = writeBatch(db);
-    const novosDocs = [];
-    for(const c of toSave){
-      const e = window._embCat.find(x=>x.id===c.embId); if(!e) continue;
-      const saldoAnteriorVazias = c.atualVazias ?? getSaldoVazias(e);
-      const novoSaldoVazias     = c.novoVazias  ?? saldoAnteriorVazias;
-      const saldoAnteriorCheias = c.atualCheias ?? getSaldoCheias(e);
-      const novoSaldoCheias     = c.novoCheias  ?? saldoAnteriorCheias;
-      const diffVazias = novoSaldoVazias - saldoAnteriorVazias;
-      const diffCheias = novoSaldoCheias - saldoAnteriorCheias;
-      if(diffVazias===0 && diffCheias===0) continue;
-
-      const docData = {
-        dataHora, timestamp: serverTimestamp(),
-        usuario, uid: window._currentUser.uid,
-        clienteId: cliId, clienteNome: cli?.nome||'',
-        codigo: e.codigo, descricao: e.descricao||'',
-        diffVazias, saldoAnteriorVazias, novoSaldoVazias,
-        tipoVazias: diffVazias>0 ? 'ENTRADA POR INVENTÁRIO' : (diffVazias<0 ? 'BAIXA POR INVENTÁRIO' : null),
-        diffCheias, saldoAnteriorCheias, novoSaldoCheias,
-        tipoCheias: diffCheias>0 ? 'ENTRADA POR INVENTÁRIO' : (diffCheias<0 ? 'BAIXA POR INVENTÁRIO' : null)
-      };
-      const ref = doc(collection(db,'movimentacoes_inventario'));
-      batch.set(ref, docData);
-      novosDocs.push({ id: ref.id, ...docData, timestamp: new Date() });
-    }
-
-    if(!novosDocs.length){ showToast('Nenhuma alteração detectada no inventário.'); return; }
-
-    await batch.commit();
-    window._inventarios = [...novosDocs, ...(window._inventarios||[])];
-    showToast(`✓ Inventário confirmado! ${novosDocs.length} embalagem(ns) atualizada(s).`);
-
-    // recarrega a tabela do inventário (agora refletindo os novos "saldos atuais") e demais telas afetadas
-    onInvClienteChange();
-    if(document.getElementById('embcat-grid')) renderEmbCat();
-    if(document.getElementById('baixa-saldo-grid')) renderBaixaSaldo();
+    // runTransaction processa TODAS as linhas alteradas atomicamente: se qualquer uma falhar
+    // na validação (ex.: saldo negativo), nenhuma escrita é aplicada — tudo ou nada.
+    await runTransaction(db, async (transaction) => {
+      resultados = []; // reset a cada tentativa, pois a transação pode ser reexecutada em caso de conflito
+ 
+      // 1ª fase: todas as leituras, antes de qualquer escrita (exigência do Firestore)
+      const snaps = [];
+      for(const r of refs){
+        const snap = await transaction.get(r.embRef);
+        if(!snap.exists()) throw new Error(`Embalagem não encontrada no banco de dados (${r.embCatId}).`);
+        snaps.push(snap);
+      }
+ 
+      // 2ª fase: validações + escritas
+      refs.forEach((r, i) => {
+        const embData = snaps[i].data();
+        const eLocal  = window._embCat.find(x=>x.id===r.embCatId);
+        // saldo real no servidor no momento da transação (persistido ou calculado do histórico — migração)
+        const cheiasServidor = (embData.saldoCheias!=null) ? Number(embData.saldoCheias) : computeSaldoCheiasFromHistorico({...eLocal, ...embData});
+        const vaziasServidor = (embData.saldoVazias!=null) ? Number(embData.saldoVazias) : computeSaldoVaziasFromHistorico({...eLocal, ...embData});
+ 
+        if(r.cheiasNovo < 0 || r.vaziasNovo < 0){
+          throw new Error(`Saldo apurado não pode ser negativo (${eLocal?.codigo||r.embCatId}).`);
+        }
+ 
+        transaction.update(r.embRef, { saldoCheias: r.cheiasNovo, saldoVazias: r.vaziasNovo });
+        transaction.set(r.ajusteRef, {
+          dataHora, timestamp: serverTimestamp(),
+          usuario, uid,
+          clienteId: cliId, clienteNome: cli?.nome||'',
+          codigo: eLocal?.codigo||'', embCatId: r.embCatId,
+          cheiasAntes: cheiasServidor, cheiasDepois: r.cheiasNovo,
+          vaziasAntes: vaziasServidor, vaziasDepois: r.vaziasNovo
+        });
+ 
+        resultados.push({
+          embCatId: r.embCatId, codigo: eLocal?.codigo||'', ajusteId: r.ajusteRef.id,
+          saldoCheias: r.cheiasNovo, saldoVazias: r.vaziasNovo,
+          cheiasAntes: cheiasServidor, vaziasAntes: vaziasServidor
+        });
+      });
+    });
+ 
+    // reflete localmente os resultados já confirmados pela transação
+    resultados.forEach(res=>{
+      const idx = window._embCat.findIndex(x=>x.id===res.embCatId);
+      if(idx>-1) window._embCat[idx] = { ...window._embCat[idx], saldoVazias: res.saldoVazias, saldoCheias: res.saldoCheias };
+      window._ajustesInventario.unshift({
+        id: res.ajusteId, dataHora, timestamp: new Date(),
+        usuario, uid, clienteId: cliId, clienteNome: cli?.nome||'',
+        codigo: res.codigo, embCatId: res.embCatId,
+        cheiasAntes: res.cheiasAntes, cheiasDepois: res.saldoCheias,
+        vaziasAntes: res.vaziasAntes, vaziasDepois: res.saldoVazias
+      });
+    });
+ 
+    showToast(`✓ Inventário confirmado: ${linhasAlteradas.length} embalagem(ns) ajustada(s).`);
+    onInvClienteChange(); // recarrega a tela usando os novos saldos como baseline
+    if (document.getElementById('embcat-grid')) renderEmbCat();
+    if (document.getElementById('baixa-saldo-grid')) renderBaixaSaldo();
   }catch(err){
-    showToast('✕ Erro ao confirmar inventário: '+(err.code||err.message), true);
+    showToast('✕ Erro: '+(err.message||err.code||'falha desconhecida'), true);
   }finally{
-    btn.disabled = false; btn.textContent = '✓ Confirmar Inventário';
+    btn.disabled=false; btn.textContent='✓ Confirmar Inventário';
   }
 };
  
@@ -3131,7 +3092,7 @@ window.showToast=(msg,error=false)=>{const t=document.getElementById('toast');t.
 function showErr(el,msg){el.style.display='block';el.textContent=msg;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
  
-['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-import-inv','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico','modal-cliente-embalagens'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
+['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico','modal-cliente-embalagens'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
 document.getElementById('img-viewer')?.addEventListener('click',function(e){if(e.target===this)closeImgViewer();});
 </script>
 </body>
