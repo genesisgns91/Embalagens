@@ -17,12 +17,12 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;font-size:15px;}
 ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
-
+ 
 /* LOADING */
 #loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;}
 .loader-ring{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-
+ 
 /* AUTH */
 #auth-screen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px;}
 .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 36px;width:100%;max-width:440px;}
@@ -37,7 +37,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .pass-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0;}
 .forgot-link{display:block;text-align:right;font-size:12px;color:var(--accent2);cursor:pointer;margin-top:6px;text-decoration:none;}
 .forgot-link:hover{text-decoration:underline;}
-
+ 
 /* FIELDS */
 .field{margin-bottom:16px;}
 .field label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500;letter-spacing:.5px;}
@@ -46,7 +46,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .field textarea{resize:vertical;min-height:80px;}
 .field input[readonly]{color:var(--text2);cursor:default;}
 .field select option{background:var(--surface);}
-
+ 
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;}
 .btn-primary{background:var(--accent);color:#0d0f14;width:auto;padding:11px;}
@@ -61,7 +61,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .btn-icon{padding:8px;border-radius:8px;}
 .error-msg{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.3);color:var(--warn);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
 .success-msg{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);color:var(--accent);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
-
+ 
 /* APP SHELL */
 #app{display:none;}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
@@ -75,7 +75,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .role-visualizador{background:rgba(122,128,153,.15);color:var(--text2);}
 .role-operador{background:rgba(0,119,255,.15);color:#60a5fa;}
 .role-administrador{background:rgba(0,229,160,.15);color:var(--accent);}
-
+ 
 .nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 24px;gap:4px;overflow-x:auto;}
 .nav-tab{padding:14px 16px;background:none;border:none;color:var(--text2);font-family:var(--font-body);font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s;font-weight:500;white-space:nowrap;}
 .nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
@@ -83,19 +83,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .nav-tab:disabled{opacity:.3;cursor:not-allowed;}
 .page{display:none;padding:24px 20px;max-width:1900px;margin:0 auto;}
 .page.active{display:block;}
-
+ 
 /* PAGE HEADER */
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap;}
 .page-title{font-size:22px;font-weight:600;}
 .page-sub{color:var(--text2);font-size:13px;margin-top:4px;}
-
+ 
 /* FORM CARDS */
 .form-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:24px;}
 .form-card-title{font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;}
 .form-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));}
 .form-grid .span2{grid-column:span 2;}
 .form-grid .full{grid-column:1/-1;}
-
+ 
 /* EMBALAGENS INPUT */
 .emb-row{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed var(--border);}
 .emb-row:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0;}
@@ -104,7 +104,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .btn-add-emb:hover{border-color:var(--accent);color:var(--accent);}
 .btn-rem-emb{flex:0 0 auto;background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);color:var(--warn);border-radius:8px;padding:10px 12px;cursor:pointer;font-size:16px;transition:all .2s;}
 .btn-rem-emb:hover{background:rgba(255,107,53,.25);}
-
+ 
 /* FOTO */
 .foto-zone{border:1.5px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;}
 .foto-zone:hover{border-color:var(--accent2);}
@@ -122,7 +122,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .list-thumb{width:42px;height:42px;border-radius:8px;object-fit:cover;border:1px solid var(--border);vertical-align:middle;flex-shrink:0;}
 .list-thumb-placeholder{width:42px;height:42px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--text3);flex-shrink:0;}
 .name-cell{display:flex;align-items:center;gap:10px;}
-
+ 
 /* TABLE */
 .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
 .filter-bar .field{margin:0;flex:1;min-width:160px;}
@@ -164,7 +164,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 .table-solicitacoes th:nth-child(5),.table-solicitacoes td:nth-child(5){width:10%;}
 .table-solicitacoes th:nth-child(6),.table-solicitacoes td:nth-child(6){width:10%;}
 .table-solicitacoes th:nth-child(7),.table-solicitacoes td:nth-child(7){width:18%;}
-
+ 
 /* CATÁLOGO DE EMBALAGENS — colunas compactas para evitar scroll horizontal */
 .table-embcat{table-layout:auto;width:100%;}
 .table-embcat th{white-space:normal;line-height:1.3;vertical-align:bottom;padding:9px 10px;}
@@ -176,13 +176,13 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 .table-embcat th.col-receb-a,.table-embcat th.col-receb-b{white-space:normal;max-width:110px;}
 .empty-state{padding:48px;text-align:center;color:var(--text3);}
 .empty-state .empty-icon{font-size:32px;margin-bottom:12px;}
-
+ 
 /* EXPORT BAR */
 .export-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
 .export-bar .count{font-size:13px;color:var(--text2);}
 .export-bar .count span{color:var(--text);font-weight:600;}
 .export-btns{display:flex;gap:8px;}
-
+ 
 /* PAGINATION */
 .pag-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 4px 4px;flex-wrap:wrap;}
 .pag-bar .pag-info{font-size:12px;color:var(--text2);}
@@ -190,7 +190,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 .mov-tipo{display:inline-block;padding:3px 9px;border-radius:8px;font-size:11px;font-weight:600;letter-spacing:.3px;white-space:nowrap;}
 .mov-tipo.entrada{background:rgba(0,229,160,.15);color:var(--accent);}
 .mov-tipo.saida{background:rgba(255,107,53,.15);color:var(--warn);}
-
+ 
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:16px;}
 .modal-overlay.open{display:flex;}
@@ -202,14 +202,14 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 .foto-gallery img{width:100%;border-radius:8px;border:1px solid var(--border);cursor:pointer;}
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:20px;}
 .detail-item label{font-size:11px;color:var(--text2);display:block;margin-bottom:2px;}
-
+ 
 /* ADMIN */
 .admin-gate{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:400px;margin:0 auto;}
 .users-list{display:flex;flex-direction:column;gap:10px;}
 .user-row{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .user-info .uname{font-weight:500;font-size:14px;}
 .user-info .uemail{font-size:12px;color:var(--text2);margin-top:2px;}
-
+ 
 /* CATALOG CARDS */
 .catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
 .catalog-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .2s;}
@@ -222,18 +222,18 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 .cf-row{display:flex;justify-content:space-between;font-size:12px;}
 .cf-label{color:var(--text2);}
 .cf-val{color:var(--text);font-family:var(--font-mono);font-size:11px;}
-
+ 
 /* TOAST */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:14px 18px;font-size:13px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;max-width:300px;}
 .toast.show{transform:translateY(0);opacity:1;}
 .toast.error{border-left-color:var(--warn);}
-
+ 
 /* IMG VIEWER */
 #img-viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;align-items:center;justify-content:center;}
 #img-viewer.open{display:flex;}
 #img-viewer img{max-width:95vw;max-height:95vh;border-radius:8px;object-fit:contain;}
 #img-viewer-close{position:absolute;top:16px;right:16px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font-body);font-size:13px;}
-
+ 
 /* TOGGLE SWITCH */
 .switch{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0;}
 .switch input{opacity:0;width:0;height:0;position:absolute;}
@@ -246,12 +246,18 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 .config-row:not(:last-child){margin-bottom:16px;padding-bottom:16px;border-bottom:1px dashed var(--border);}
 .config-row-title{font-weight:500;font-size:14px;}
 .config-row-sub{font-size:12px;color:var(--text2);margin-top:2px;}
-
+ 
 /* ACCESS DENIED */
 .access-denied{text-align:center;padding:60px 24px;color:var(--text3);}
 .access-denied .icon{font-size:40px;margin-bottom:16px;}
 .access-denied p{font-size:14px;color:var(--text2);}
-
+ 
+/* INVENTÁRIO */
+.inv-input{width:100px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:var(--font-mono);font-size:13px;text-align:center;outline:none;transition:border-color .2s;}
+.inv-input:focus{border-color:var(--accent2);}
+.inv-input[readonly]{opacity:.5;cursor:not-allowed;}
+.inv-input.inv-changed{border-color:var(--accent);background:rgba(0,229,160,.06);}
+ 
 @media(max-width:600px){
   .page{padding:20px 16px;}.topbar{padding:0 16px;}
   .nav-tabs{padding:0 8px;}.nav-tab{padding:12px 10px;font-size:12px;}
@@ -261,12 +267,12 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 </style>
 </head>
 <body>
-
+ 
 <div id="loading-screen">
   <div class="loader-ring"></div>
   <div style="font-size:12px;color:var(--text2);font-family:var(--font-mono);letter-spacing:2px;">CARREGANDO...</div>
 </div>
-
+ 
 <!-- AUTH -->
 <div id="auth-screen" style="display:none;">
   <div class="auth-card">
@@ -280,7 +286,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
     <div id="auth-error" class="error-msg"></div>
     <div id="auth-success" class="success-msg"></div>
-
+ 
     <!-- LOGIN -->
     <div id="login-form">
       <div class="field"><label>E-MAIL</label><input type="email" id="login-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
@@ -290,7 +296,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
       </div>
       <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
     </div>
-
+ 
     <!-- REGISTER -->
     <div id="register-form" style="display:none;">
       <div class="field"><label>NOME COMPLETO</label><input type="text" id="reg-name" placeholder="Seu nome completo"></div>
@@ -303,7 +309,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
       </div>
       <button class="btn btn-primary" onclick="doRegister()">Criar conta</button>
     </div>
-
+ 
     <!-- FORGOT -->
     <div id="forgot-form" style="display:none;">
       <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">Informe seu e-mail cadastrado e enviaremos um link para redefinir sua senha.</div>
@@ -312,7 +318,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- APP -->
 <div id="app">
   <div class="topbar">
@@ -330,8 +336,9 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     <button class="nav-tab" id="nav-embalagens-cat" onclick="switchTab('embalagens-cat')">📦 Embalagens</button>
     <button class="nav-tab" id="nav-baixa" onclick="switchTab('baixa')" style="display:none">📉 Baixa de Saldo</button>
     <button class="nav-tab" id="nav-solicitacoes" onclick="switchTab('solicitacoes')" style="display:none">📋 Solicitações</button>
+    <button class="nav-tab" id="nav-inventario" onclick="switchTab('inventario')">🧮 Inventário</button>
   </div>
-
+ 
   <!-- REGISTRO -->
   <div id="tab-registro" class="page active">
     <div class="page-header">
@@ -376,7 +383,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
       </div>
     </div>
   </div>
-
+ 
   <!-- CONSULTA -->
   <div id="tab-consulta" class="page">
     <div class="page-header">
@@ -416,7 +423,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
       </div>
     </div>
   </div>
-
+ 
   <!-- CLIENTES -->
   <div id="tab-clientes" class="page">
     <div class="page-header">
@@ -446,7 +453,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
       </div>
     </div>
   </div>
-
+ 
   <!-- EMBALAGENS CATÁLOGO -->
   <div id="tab-embalagens-cat" class="page">
     <div class="page-header">
@@ -508,7 +515,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
       </div>
     </div>
   </div>
-
+ 
   <!-- BAIXA DE SALDO -->
   <div id="tab-baixa" class="page">
     <div class="page-header">
@@ -553,13 +560,13 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
       <div id="baixa-saldo-empty" class="empty-state" style="display:none;"><div class="empty-icon">📦</div><p>Nenhuma embalagem cadastrada</p></div>
     </div>
   </div>
-
+ 
   <!-- SOLICITAÇÕES -->
   <div id="tab-solicitacoes" class="page">
     <div class="page-header">
       <div><div class="page-title">Solicitações</div><div class="page-sub">Solicite e acompanhe a retirada de embalagens</div></div>
     </div>
-
+ 
     <div id="sol-no-access" class="access-denied" style="display:none;">
       <div class="icon">🔒</div><p>Seu perfil não tem permissão para registrar solicitações.</p>
     </div>
@@ -583,7 +590,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
         <button class="btn btn-primary" id="btn-sol-salvar" onclick="salvarSolicitacao()">✓ Registrar Solicitação</button>
       </div>
     </div>
-
+ 
     <div class="filter-bar">
       <div class="field"><label>FILTRAR POR CLIENTE</label>
         <select id="filter-sol-cli" onchange="renderSolicitacoes()">
@@ -617,7 +624,50 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
       <div id="sol-empty" class="empty-state" style="display:none;"><div class="empty-icon">📋</div><p>Nenhuma solicitação registrada</p></div>
     </div>
   </div>
-
+ 
+  <!-- INVENTÁRIO -->
+  <div id="tab-inventario" class="page">
+    <div class="page-header">
+      <div><div class="page-title">Inventário de Embalagens</div><div class="page-sub">Apuração e ajuste de saldo por cliente</div></div>
+    </div>
+ 
+    <div id="inv-no-access" class="access-denied" style="display:none;">
+      <div class="icon">🔒</div><p>Apenas administradores podem acessar o inventário de embalagens.</p>
+    </div>
+ 
+    <div id="inv-wrap">
+      <div class="filter-bar">
+        <div class="field"><label>CLIENTE *</label>
+          <select id="inv-cli" onchange="onInvClienteChange()">
+            <option value="">— Selecione o cliente —</option>
+          </select>
+        </div>
+        <div class="field"><label>BUSCAR CÓDIGO / NOME</label><input type="text" id="inv-filtro-cod" placeholder="Código ou nome..." oninput="renderInventario()"></div>
+      </div>
+ 
+      <div class="table-wrap">
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr>
+              <th>Embalagem</th>
+              <th class="col-cheias">Saldo Atual CHEIAS</th>
+              <th class="col-cheias">Novo Saldo Apurado · CHEIAS</th>
+              <th class="col-vazias">Saldo Atual VAZIAS</th>
+              <th class="col-vazias">Novo Saldo Apurado · VAZIAS</th>
+            </tr></thead>
+            <tbody id="inv-grid"></tbody>
+          </table>
+        </div>
+        <div id="inv-empty" class="empty-state"><div class="empty-icon">📦</div><p>Selecione um cliente para carregar o inventário</p></div>
+      </div>
+ 
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;">
+        <button class="btn btn-primary" id="btn-confirmar-inventario" onclick="confirmarInventario()" disabled>✓ Confirmar Inventário</button>
+        <button class="btn btn-secondary" onclick="onInvClienteChange()">↺ Recarregar Saldos Atuais</button>
+      </div>
+    </div>
+  </div>
+ 
   <!-- ADMIN -->
   <div id="tab-admin" class="page">
     <div class="page-header">
@@ -658,7 +708,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL DETALHES REGISTRO -->
 <div id="modal-detail" class="modal-overlay">
   <div class="modal">
@@ -671,7 +721,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL EXCLUIR -->
 <div id="modal-delete" class="modal-overlay">
   <div class="modal" style="max-width:420px;">
@@ -688,7 +738,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL CLIENTE -->
 <div id="modal-cliente" class="modal-overlay">
   <div class="modal" style="max-width:480px;">
@@ -713,7 +763,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL EXCLUIR CLIENTE -->
 <div id="modal-delete-cli" class="modal-overlay">
   <div class="modal" style="max-width:420px;">
@@ -731,7 +781,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL EMBALAGENS DO CLIENTE -->
 <div id="modal-cliente-embalagens" class="modal-overlay">
   <div class="modal" style="max-width:min(950px,95vw);">
@@ -758,7 +808,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL EMBALAGEM CATÁLOGO -->
 <div id="modal-emb-cat" class="modal-overlay">
   <div class="modal">
@@ -793,7 +843,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL EXCLUIR EMB CAT -->
 <div id="modal-delete-emb" class="modal-overlay">
   <div class="modal" style="max-width:420px;">
@@ -811,7 +861,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL IMPORTAR PLANILHA DE EMBALAGENS -->
 <div id="modal-import-emb" class="modal-overlay">
   <div class="modal">
@@ -844,7 +894,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL BAIXA DE SALDO -->
 <div id="modal-baixa" class="modal-overlay">
   <div class="modal" style="max-width:480px;">
@@ -875,7 +925,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL ATENDER SOLICITAÇÃO -->
 <div id="modal-atender" class="modal-overlay">
   <div class="modal" style="max-width:460px;">
@@ -897,7 +947,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL RECUSAR SOLICITAÇÃO -->
 <div id="modal-recusar" class="modal-overlay">
   <div class="modal" style="max-width:460px;">
@@ -917,7 +967,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL DETALHES SOLICITAÇÃO -->
 <div id="modal-sol-detail" class="modal-overlay">
   <div class="modal" style="max-width:480px;">
@@ -926,7 +976,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     <div class="detail-grid" id="modal-sol-detail-content"></div>
   </div>
 </div>
-
+ 
 <!-- MODAL HISTÓRICO DE MOVIMENTAÇÕES -->
 <div id="modal-historico" class="modal-overlay">
   <div class="modal" style="max-width:min(1025px,95vw);">
@@ -961,20 +1011,20 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
   </div>
 </div>
-
+ 
 <!-- IMG VIEWER -->
 <div id="img-viewer">
   <button id="img-viewer-close" onclick="closeImgViewer()">✕ Fechar</button>
   <img id="img-viewer-img" src="" alt="">
 </div>
 <div class="toast" id="toast"></div>
-
+ 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, updateDoc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
+import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, updateDoc, query, orderBy, where, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+ 
 const firebaseConfig = {
   apiKey: "AIzaSyAmX8gVADeGgS9SFBdN18Y1MmVwzIlC2tE",
   authDomain: "embalagens-19e30.firebaseapp.com",
@@ -984,7 +1034,7 @@ const firebaseConfig = {
   appId: "1:202746410182:web:5275f53f8fe0db3a2b93c7",
   measurementId: "G-B7DBN6DGGT"
 };
-
+ 
 const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
@@ -994,21 +1044,22 @@ function checkAdminPassOrFail(pass, errElement){
   if(pass!==ADMIN_PASS){ showErr(errElement,'Senha incorreta.'); return false; }
   return true;
 }
-
+ 
 // ROLES: visualizador | operador | administrador
 const ROLE_LABELS = { visualizador:'Visualizador', operador:'Operador', administrador:'Administrador' };
-
+ 
 window._registros   = [];
 window._clientes    = [];
 window._embCat      = [];
 window._baixas      = [];
 window._solicitacoes = [];
+window._inventarios  = [];
 window._fotos       = [];
 window._currentUser = null;
 window._userRole    = 'visualizador';
 window._pendingDeleteId = null;
 window._moduloEstoqueAtivo = false;
-
+ 
 // ── AUTH STATE ────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   document.getElementById('loading-screen').style.display = 'none';
@@ -1025,7 +1076,7 @@ onAuthStateChanged(auth, async (user) => {
         window._userRole = 'operador';
       }
     } catch(e) { window._userRole = 'operador'; }
-
+ 
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('topbar-name').textContent = user.displayName || user.email;
@@ -1035,7 +1086,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('f-user').value = user.displayName || user.email;
     applyRoleUI();
     initDatetime();
-    await Promise.all([loadClientes(), loadEmbCat(), loadRegistros(), loadConfiguracoes(), loadBaixas(), loadSolicitacoes()]);
+    await Promise.all([loadClientes(), loadEmbCat(), loadRegistros(), loadConfiguracoes(), loadBaixas(), loadSolicitacoes(), loadInventarios()]);
     addEmbRow();
   } else {
     window._currentUser = null;
@@ -1044,34 +1095,40 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('app').style.display = 'none';
   }
 });
-
+ 
 function applyRoleUI() {
   const r = window._userRole;
   const canWrite = r === 'operador' || r === 'administrador';
   const canAdmin = r === 'administrador';
-
+ 
   // Registro tab
   document.getElementById('reg-no-access').style.display = canWrite ? 'none' : 'block';
   document.getElementById('reg-form-wrap').style.display = canWrite ? 'block' : 'none';
-
+ 
   // Solicitações tab
   const solNoAccess = document.getElementById('sol-no-access');
   const solFormWrap = document.getElementById('sol-form-wrap');
   if (solNoAccess) solNoAccess.style.display = canWrite ? 'none' : 'block';
   if (solFormWrap) solFormWrap.style.display = canWrite ? 'block' : 'none';
-
+ 
   // Clientes tab
   document.getElementById('btn-novo-cliente').style.display = canWrite ? 'inline-flex' : 'none';
-
+ 
   // EmbCat tab
   document.getElementById('btn-nova-emb-cat').style.display = canWrite ? 'inline-flex' : 'none';
   document.getElementById('btn-import-emb-cat').style.display = canAdmin ? 'inline-flex' : 'none';
-
+ 
   // Config de módulos (Adm) — visível apenas para administrador
   const cfgCard = document.getElementById('config-modulo-card');
   if (cfgCard) cfgCard.style.display = canAdmin ? 'block' : 'none';
+ 
+  // Inventário — acesso exclusivo de administrador
+  const invNoAccess = document.getElementById('inv-no-access');
+  const invWrap = document.getElementById('inv-wrap');
+  if (invNoAccess) invNoAccess.style.display = canAdmin ? 'none' : 'block';
+  if (invWrap) invWrap.style.display = canAdmin ? 'block' : 'none';
 }
-
+ 
 // ── AUTH FUNCTIONS ─────────────────────────────────────
 window.doLogin = async () => {
   const email = document.getElementById('login-email').value.trim();
@@ -1084,7 +1141,7 @@ window.doLogin = async () => {
     showAuthErr(m[e.code]||'Erro: '+e.message);
   }
 };
-
+ 
 window.doRegister = async () => {
   const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
@@ -1105,7 +1162,7 @@ window.doRegister = async () => {
     showAuthErr(m[e.code]||'Erro: '+e.message);
   }
 };
-
+ 
 window.doForgot = async () => {
   const email = document.getElementById('forgot-email').value.trim();
   clearAuthMsgs();
@@ -1119,9 +1176,9 @@ window.doForgot = async () => {
     showAuthErr(m[e.code]||'Erro: '+e.message);
   }
 };
-
+ 
 window.doLogout = async () => { await signOut(auth); };
-
+ 
 window.switchAuthTab = (tab) => {
   document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
   clearAuthMsgs();
@@ -1132,16 +1189,16 @@ window.switchAuthTab = (tab) => {
   const subs = {login:'Faça login para continuar',register:'Crie sua conta',forgot:'Recuperar senha'};
   document.getElementById('auth-sub-text').textContent = subs[tab];
 };
-
+ 
 window.togglePass = (inputId, btn) => {
   const el = document.getElementById(inputId);
   if (el.type==='password') { el.type='text'; btn.textContent='🙈'; }
   else { el.type='password'; btn.textContent='👁'; }
 };
-
+ 
 function clearAuthMsgs() { document.getElementById('auth-error').style.display='none'; document.getElementById('auth-success').style.display='none'; }
 function showAuthErr(msg) { const e=document.getElementById('auth-error'); e.style.display='block'; e.textContent=msg; }
-
+ 
 // ── CONFIGURAÇÕES (chave liga/desliga de módulos) ──────
 async function loadConfiguracoes() {
   try {
@@ -1151,7 +1208,7 @@ async function loadConfiguracoes() {
   applyModuloEstoqueUI();
 }
 window.loadConfiguracoes = loadConfiguracoes;
-
+ 
 function applyModuloEstoqueUI() {
   const ativo = window._moduloEstoqueAtivo;
   const navBaixa = document.getElementById('nav-baixa');
@@ -1168,7 +1225,7 @@ function applyModuloEstoqueUI() {
   if (document.getElementById('embcat-grid')) renderEmbCat();
   if (document.getElementById('modal-cliente-embalagens')?.classList.contains('open')) renderClienteEmbalagensModal();
 }
-
+ 
 window.toggleModuloEstoque = async (checked) => {
   if (window._userRole !== 'administrador') { showToast('Sem permissão.', true); return; }
   const chk = document.getElementById('toggle-modulo-estoque');
@@ -1185,7 +1242,7 @@ window.toggleModuloEstoque = async (checked) => {
     chk.disabled = false;
   }
 };
-
+ 
 // ── CLIENTES ───────────────────────────────────────────
 async function loadClientes() {
   try {
@@ -1196,12 +1253,12 @@ async function loadClientes() {
   } catch(e) { console.error('loadClientes:',e); }
 }
 window.loadClientes = loadClientes;
-
+ 
 // helper único para montar as <option> de cliente, reutilizado por todos os selects do sistema
 function buildClienteOptions() {
   return window._clientes.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
 }
-
+ 
 function populateClienteSelects() {
   const opts = buildClienteOptions();
   document.getElementById('emb-cat-cli').innerHTML = '<option value="">— Selecione o cliente —</option>' + opts;
@@ -1215,6 +1272,8 @@ function populateClienteSelects() {
   if (solCliSel) { const cur=solCliSel.value; solCliSel.innerHTML = '<option value="">— Selecione o cliente —</option>' + opts; if (cur) solCliSel.value = cur; }
   const filterSolCliSel = document.getElementById('filter-sol-cli');
   if (filterSolCliSel) filterSolCliSel.innerHTML = '<option value="">Todos os clientes</option>' + opts;
+  const invCliSel = document.getElementById('inv-cli');
+  if (invCliSel) { const cur=invCliSel.value; invCliSel.innerHTML = '<option value="">— Selecione o cliente —</option>' + opts; if (cur) invCliSel.value = cur; }
   // refresh any per-row cliente selects already rendered in "+ Registro", preserving selection
   document.querySelectorAll('.emb-cli').forEach(sel=>{
     const cur = sel.value;
@@ -1222,7 +1281,7 @@ function populateClienteSelects() {
     if (cur) sel.value = cur;
   });
 }
-
+ 
 window.renderClientes = () => {
   const f = (document.getElementById('filter-cli-nome')?.value||'').toLowerCase();
   let data = window._clientes.filter(c=>!f||c.nome?.toLowerCase().includes(f));
@@ -1253,7 +1312,7 @@ window.renderClientes = () => {
       </td>
     </tr>`).join('');
 };
-
+ 
 window.sortClientes=(field)=>{
   const s=window._clientesSort;
   if(s.field===field) s.dir*=-1; else { s.field=field; s.dir=1; }
@@ -1279,7 +1338,7 @@ window.openModalCliente = (id) => {
   }
   document.getElementById('modal-cliente').classList.add('open');
 };
-
+ 
 window.salvarCliente = async () => {
   const nome = document.getElementById('cli-nome').value.trim();
   const dx   = document.getElementById('cli-dx').value.trim();
@@ -1306,7 +1365,7 @@ window.salvarCliente = async () => {
     renderClientes();
   } catch(e){ showErr(errEl,'Erro: '+e.message); }
 };
-
+ 
 window.askDeleteCli = (id) => {
   document.getElementById('delete-cli-id').value=id;
   document.getElementById('delete-cli-pass').value='';
@@ -1332,10 +1391,10 @@ window.confirmDeleteCli = async () => {
     showToast('✓ Cliente excluído.');
   } catch(e){showErr(errEl,'Erro: '+e.message);}
 };
-
+ 
 // ── EMBALAGENS DO CLIENTE (modal de detalhes a partir do Cadastro de Clientes) ──
 window._cliEmbCurrentId = null;
-
+ 
 window.openModalClienteEmbalagens = (clienteId) => {
   const cli = window._clientes.find(c=>c.id===clienteId); if(!cli) return;
   document.getElementById('cliemb-info-cliente').textContent = cli.nome||'–';
@@ -1343,22 +1402,22 @@ window.openModalClienteEmbalagens = (clienteId) => {
   renderClienteEmbalagensModal();
   document.getElementById('modal-cliente-embalagens').classList.add('open');
 };
-
+ 
 function renderClienteEmbalagensModal(){
   const clienteId = window._cliEmbCurrentId;
   const grid  = document.getElementById('cliemb-grid');
   const empty = document.getElementById('cliemb-empty');
   if(!grid || !clienteId) return;
-
+ 
   const estoqueAtivo = !!window._moduloEstoqueAtivo;
   ['th-cliemb-vazias','th-cliemb-cheias','th-cliemb-total'].forEach(id=>{
     const th=document.getElementById(id); if(th) th.style.display = estoqueAtivo ? '' : 'none';
   });
-
+ 
   const data = window._embCat.filter(e=>e.clienteId===clienteId);
   if(!data.length){ grid.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
-
+ 
   grid.innerHTML = data.map(e=>{
     const vazias = estoqueAtivo ? getSaldoVazias(e) : 0;
     const cheias = estoqueAtivo ? getSaldoCheias(e) : 0;
@@ -1375,7 +1434,7 @@ function renderClienteEmbalagensModal(){
     </tr>`;
   }).join('');
 }
-
+ 
 // ── EMBALAGENS CATÁLOGO ────────────────────────────────
 async function loadEmbCat() {
   try {
@@ -1386,13 +1445,14 @@ async function loadEmbCat() {
   } catch(e){ console.error('loadEmbCat:',e); }
 }
 window.loadEmbCat = loadEmbCat;
-
+ 
 window._embCatSort = {field:null, dir:1};
 window._registrosSort = {field:null, dir:1};
 window._clientesSort  = {field:null, dir:1};
 window._baixaSort     = {field:null, dir:1};
 window._solSort       = {field:null, dir:1};
-
+window._invRows = []; // linhas atuais do inventário em edição (Etapa 1: apenas UI)
+ 
 // aplica indicador visual (▲/▼) no cabeçalho ativo de uma tabela ordenável
 function sortIndId(prefix, field){ return prefix ? `sort-ind-${prefix}-${field}` : `sort-ind-${field}`; }
 function applySortIndicator(prefix, state, fields){
@@ -1416,7 +1476,7 @@ function genericSort(arr, state, getVal){
     return 0;
   });
 }
-
+ 
 // filtro reutilizável do Catálogo de Embalagens (usado na renderização e na exportação)
 function getFilteredEmbCat(){
   const fc  = document.getElementById('filter-embcat-cli')?.value||'';
@@ -1429,14 +1489,14 @@ function getFilteredEmbCat(){
     return true;
   });
 }
-
+ 
 window.renderEmbCat = () => {
   const fdi = document.getElementById('filter-embcat-data-ini')?.value||'';
   const fdf = document.getElementById('filter-embcat-data-fim')?.value||'';
   let data = getFilteredEmbCat();
   const grid  = document.getElementById('embcat-grid');
   const empty = document.getElementById('embcat-empty');
-
+ 
   // pré-calcula dados derivados (cliente, último recebimento, somatória do período) para exibição e ordenação
   const canWrite = ['operador','administrador'].includes(window._userRole);
   const canDel   = window._userRole==='administrador';
@@ -1454,10 +1514,10 @@ window.renderEmbCat = () => {
   ['th-col-vazias','th-col-cheias','th-col-total'].forEach(id=>{
     const th=document.getElementById(id); if(th) th.style.display = estoqueAtivo ? '' : 'none';
   });
-
+ 
   if(!rows.length){grid.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-
+ 
   // ordenação pelo cabeçalho selecionado (reutiliza o helper genérico de ordenação)
   const embCatGetVal = (row)=>{
     switch(window._embCatSort.field){
@@ -1478,7 +1538,7 @@ window.renderEmbCat = () => {
   };
   rows = genericSort(rows, window._embCatSort, embCatGetVal);
   applySortIndicator('', window._embCatSort, ['codigo','cliente','nomeInterno','codDatasul','qtdFardo','valor','ultimoRecebimento','qtdRecebida','recebidoPeriodo','vazias','cheias','total']);
-
+ 
   grid.innerHTML = rows.map(({e,cli,ult,recebidoPeriodo,vazias,cheias,total})=>{
     const valorFmt = (e.valor!=null && e.valor!=='') ? 'R$ '+Number(e.valor).toFixed(2).replace('.',',') : '–';
     const estoqueCols = estoqueAtivo ? `
@@ -1503,7 +1563,7 @@ window.renderEmbCat = () => {
     </tr>`;
   }).join('');
 };
-
+ 
 window.sortEmbCat = (field) => {
   if(window._embCatSort.field === field){
     window._embCatSort.dir *= -1;
@@ -1513,13 +1573,13 @@ window.sortEmbCat = (field) => {
   }
   renderEmbCat();
 };
-
+ 
 window.limparFiltrosEmbCat = () => {
   const ini=document.getElementById('filter-embcat-data-ini'), fim=document.getElementById('filter-embcat-data-fim');
   if(ini) ini.value=''; if(fim) fim.value='';
   renderEmbCat();
 };
-
+ 
 function getUltimoRecebimento(emb){
   for(const r of (window._registros||[])){
     const item=(r.embalagens||[]).find(it=>{
@@ -1531,7 +1591,7 @@ function getUltimoRecebimento(emb){
   }
   return null;
 }
-
+ 
 // converte "dd/mm/aaaa hh:mm:ss" em "aaaa-mm-dd" para comparação de datas
 function dataHoraToYMD(dataHora){
   const p = dataHora?.split(' ')[0]?.split('/');
@@ -1546,7 +1606,7 @@ function parseDataHoraToSortable(dataHora){
   const [h='00',mi='00',s='00'] = (horaParte||'').split(':');
   return new Date(`${p[2]}-${p[1]}-${p[0]}T${h}:${mi}:${s}`).getTime() || -Infinity;
 }
-
+ 
 // soma as quantidades recebidas de uma embalagem (cliente + código) dentro do período informado (datas no formato aaaa-mm-dd, opcionais)
 function getRecebidoNoPeriodo(emb, dataIni, dataFim){
   let total = 0;
@@ -1563,7 +1623,7 @@ function getRecebidoNoPeriodo(emb, dataIni, dataFim){
   }
   return total;
 }
-
+ 
 // ── SALDO DE EMBALAGENS (Entradas - Baixas Manuais - Solicitações Atendidas) ──
 function getTotalEntradas(emb){
   return getRecebidoNoPeriodo(emb, '', ''); // sem filtro de período = soma total de entradas
@@ -1597,13 +1657,28 @@ function getTotalSolicitacoesAtendidas(emb){
   }
   return total;
 }
-// Saldo VAZIAS: entradas (+Registro) menos baixas manuais de vazias menos o que já foi transferido para CHEIAS via atendimento
-function getSaldoVazias(emb){
-  return getTotalEntradas(emb) - getTotalBaixasVazias(emb) - getTotalSolicitacoesAtendidas(emb);
+// Ajustes de inventário (Etapa 3) — diferença líquida lançada em "Confirmar Inventário" (pode ser positiva ou negativa)
+function getTotalAjusteInventarioVazias(emb){
+  let total = 0;
+  for(const inv of (window._inventarios||[])){
+    if(inv.codigo===emb.codigo && inv.clienteId===emb.clienteId) total += Number(inv.diffVazias)||0;
+  }
+  return total;
 }
-// Saldo CHEIAS: soma das solicitações atendidas (a quantidade atendida "vira" cheia) menos baixas manuais de cheias
+function getTotalAjusteInventarioCheias(emb){
+  let total = 0;
+  for(const inv of (window._inventarios||[])){
+    if(inv.codigo===emb.codigo && inv.clienteId===emb.clienteId) total += Number(inv.diffCheias)||0;
+  }
+  return total;
+}
+// Saldo VAZIAS: entradas (+Registro) menos baixas manuais de vazias menos o que já foi transferido para CHEIAS via atendimento, mais/menos ajustes de inventário
+function getSaldoVazias(emb){
+  return getTotalEntradas(emb) - getTotalBaixasVazias(emb) - getTotalSolicitacoesAtendidas(emb) + getTotalAjusteInventarioVazias(emb);
+}
+// Saldo CHEIAS: soma das solicitações atendidas (a quantidade atendida "vira" cheia) menos baixas manuais de cheias, mais/menos ajustes de inventário
 function getSaldoCheias(emb){
-  return getTotalSolicitacoesAtendidas(emb) - getTotalBaixasCheias(emb);
+  return getTotalSolicitacoesAtendidas(emb) - getTotalBaixasCheias(emb) + getTotalAjusteInventarioCheias(emb);
 }
 // Saldo TOTAL = Cheias + Vazias
 function getSaldoTotal(emb){
@@ -1613,7 +1688,7 @@ function getSaldoTotal(emb){
 function getSaldoDisponivel(emb){
   return getSaldoVazias(emb);
 }
-
+ 
 // ── BAIXA DE SALDO ──────────────────────────────────────
 async function loadBaixas(){
   try{
@@ -1622,7 +1697,16 @@ async function loadBaixas(){
   }catch(e){ console.error('loadBaixas:',e); }
 }
 window.loadBaixas = loadBaixas;
-
+ 
+// ── MOVIMENTAÇÕES DE INVENTÁRIO (Etapa 3) ────────────────
+async function loadInventarios(){
+  try{
+    const snap = await getDocs(query(collection(db,'movimentacoes_inventario'),orderBy('timestamp','desc')));
+    window._inventarios = snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){ console.error('loadInventarios:',e); }
+}
+window.loadInventarios = loadInventarios;
+ 
 // filtro reutilizável da Baixa de Saldo (usado na renderização e na exportação)
 function getFilteredBaixaSaldo(){
   const fc = document.getElementById('filter-baixa-cli')?.value||'';
@@ -1635,7 +1719,7 @@ function getFilteredBaixaSaldo(){
     return true;
   });
 }
-
+ 
 window.renderBaixaSaldo = () => {
   const grid = document.getElementById('baixa-saldo-grid');
   if(!grid) return;
@@ -1682,7 +1766,7 @@ window.renderBaixaSaldo = () => {
     </tr>`;
   }).join('');
 };
-
+ 
 window.sortBaixaSaldo=(field)=>{
   const s=window._baixaSort;
   if(s.field===field) s.dir*=-1; else { s.field=field; s.dir=1; }
@@ -1713,7 +1797,7 @@ window.openModalBaixa = (embCatId) => {
   document.getElementById('modal-baixa').classList.add('open');
   validateBaixaForm();
 };
-
+ 
 // Validação em tempo real do formulário de baixa: impede vazias/cheias acima do saldo
 // disponível de cada tipo e exige que pelo menos um dos dois campos seja > 0.
 window.validateBaixaForm = () => {
@@ -1723,23 +1807,23 @@ window.validateBaixaForm = () => {
   const cheiasInput = document.getElementById('baixa-qtd-cheias');
   const saldoVazio = Number(document.getElementById('baixa-saldo-vazio-max').value)||0;
   const saldoCheio = Number(document.getElementById('baixa-saldo-cheio-max').value)||0;
-
+ 
   let vazias = Number(vaziasInput.value);
   let cheias = Number(cheiasInput.value);
   if(isNaN(vazias) || vazias<0) vazias = 0;
   if(isNaN(cheias) || cheias<0) cheias = 0;
-
+ 
   let msg = '';
   if(vazias > saldoVazio) msg = `Quantidade de VAZIAS maior que o saldo disponível (${saldoVazio}).`;
   else if(cheias > saldoCheio) msg = `Quantidade de CHEIAS maior que o saldo disponível (${saldoCheio}).`;
   else if(vazias<=0 && cheias<=0) msg = 'Informe uma quantidade maior que zero em Vazias ou em Cheias.';
-
+ 
   if(msg){ showErr(errEl,msg); btn.disabled = true; return false; }
   errEl.style.display='none';
   btn.disabled = false;
   return true;
 };
-
+ 
 window.confirmarBaixa = async () => {
   if(!['operador','administrador'].includes(window._userRole)){ showToast('Sem permissão.', true); return; }
   const errEl = document.getElementById('modal-baixa-error');
@@ -1752,14 +1836,14 @@ window.confirmarBaixa = async () => {
   const obs       = document.getElementById('baixa-obs').value.trim();
   const e = window._embCat.find(x=>x.id===embCatId);
   if(!e){ showErr(errEl,'Embalagem não encontrada.'); return; }
-
+ 
   // revalida o saldo no momento da confirmação, usando os dados mais recentes em memória
   const saldoVazioAtual = getSaldoVazias(e);
   const saldoCheioAtual = getSaldoCheias(e);
   if(qtdVazias > saldoVazioAtual){ showErr(errEl, `Quantidade de VAZIAS maior que o saldo disponível (${saldoVazioAtual}).`); return; }
   if(qtdCheias > saldoCheioAtual){ showErr(errEl, `Quantidade de CHEIAS maior que o saldo disponível (${saldoCheioAtual}).`); return; }
   if(qtdVazias<=0 && qtdCheias<=0){ showErr(errEl, 'Informe uma quantidade maior que zero em Vazias ou em Cheias.'); return; }
-
+ 
   const cli = window._clientes.find(c=>c.id===clienteId);
   const btn = document.getElementById('btn-confirmar-baixa');
   btn.disabled = true; btn.textContent = 'Salvando...';
@@ -1788,7 +1872,7 @@ window.confirmarBaixa = async () => {
     btn.disabled=false; btn.textContent='Confirmar Baixa';
   }
 };
-
+ 
 // limpa os campos do modal de baixa após confirmação/fechamento
 function limparFormBaixa(){
   document.getElementById('baixa-qtd-vazias').value = 0;
@@ -1796,13 +1880,13 @@ function limparFormBaixa(){
   document.getElementById('baixa-obs').value = '';
   document.getElementById('modal-baixa-error').style.display = 'none';
 }
-
+ 
 // ── HISTÓRICO DE MOVIMENTAÇÕES ──────────────────────────
 window._historicoSort = {field:'data', dir:-1};
 window._historicoPage = 1;
 window._historicoRows = [];
 const HIST_PAGE_SIZE = 20;
-
+ 
 // monta a lista de movimentações (entradas, baixas manuais e atendimentos) de uma embalagem específica
 function buildHistoricoMovimentacoes(emb, cliNome){
   const rows = [];
@@ -1839,9 +1923,30 @@ function buildHistoricoMovimentacoes(emb, cliNome){
       sortTs: parseDataHoraToSortable(s.atendidoData)
     });
   }
+  // Ajustes de inventário (Etapa 3) — vazias e cheias tratados separadamente, cada um com seu próprio tipo (entrada/baixa)
+  for(const inv of (window._inventarios||[])){
+    if(inv.codigo!==emb.codigo || inv.clienteId!==emb.clienteId) continue;
+    const ts = parseDataHoraToSortable(inv.dataHora);
+    const dv = Number(inv.diffVazias)||0;
+    const dc = Number(inv.diffCheias)||0;
+    if(dv!==0){
+      rows.push({
+        codigo: emb.codigo, cliente: cliNome, qtd: Math.abs(dv),
+        tipo: (dv>0?'Entrada por Inventário':'Baixa por Inventário')+' (Vazias)',
+        usuario: inv.usuario||'–', data: inv.dataHora||'–', sortTs: ts
+      });
+    }
+    if(dc!==0){
+      rows.push({
+        codigo: emb.codigo, cliente: cliNome, qtd: Math.abs(dc),
+        tipo: (dc>0?'Entrada por Inventário':'Baixa por Inventário')+' (Cheias)',
+        usuario: inv.usuario||'–', data: inv.dataHora||'–', sortTs: ts
+      });
+    }
+  }
   return rows;
 }
-
+ 
 window.openHistorico = (embCatId) => {
   const e = window._embCat.find(x=>x.id===embCatId); if(!e) return;
   const cli = window._clientes.find(c=>c.id===e.clienteId);
@@ -1854,14 +1959,14 @@ window.openHistorico = (embCatId) => {
   document.getElementById('modal-historico').classList.add('open');
   renderHistorico();
 };
-
+ 
 window.sortHistorico = (field) => {
   const s = window._historicoSort;
   if(s.field===field) s.dir*=-1; else { s.field=field; s.dir=1; }
   window._historicoPage = 1;
   renderHistorico();
 };
-
+ 
 window.gotoHistoricoPage = (delta) => {
   const totalPages = Math.max(1, Math.ceil(window._historicoRows.length / HIST_PAGE_SIZE));
   const next = window._historicoPage + delta;
@@ -1869,13 +1974,13 @@ window.gotoHistoricoPage = (delta) => {
   window._historicoPage = next;
   renderHistorico();
 };
-
+ 
 function renderHistorico(){
   const grid  = document.getElementById('historico-grid');
   const empty = document.getElementById('historico-empty');
   const pagBar = document.getElementById('historico-pag-bar');
   const fields = ['codigo','cliente','qtd','tipo','usuario','data'];
-
+ 
   const getVal = (row)=>{
     switch(window._historicoSort.field){
       case 'codigo': return (row.codigo||'').toLowerCase();
@@ -1889,7 +1994,7 @@ function renderHistorico(){
   };
   const sorted = genericSort(window._historicoRows, window._historicoSort, getVal);
   applySortIndicator('hist', window._historicoSort, fields);
-
+ 
   if(!sorted.length){
     grid.innerHTML = '';
     empty.style.display = 'block';
@@ -1897,14 +2002,14 @@ function renderHistorico(){
     return;
   }
   empty.style.display = 'none';
-
+ 
   const totalPages = Math.max(1, Math.ceil(sorted.length / HIST_PAGE_SIZE));
   if(window._historicoPage > totalPages) window._historicoPage = totalPages;
   const startIdx = (window._historicoPage-1) * HIST_PAGE_SIZE;
   const pageRows = sorted.slice(startIdx, startIdx + HIST_PAGE_SIZE);
-
+ 
   grid.innerHTML = pageRows.map(row=>{
-    const isEntrada = row.tipo === 'Entrada';
+    const isEntrada = row.tipo === 'Entrada' || row.tipo.startsWith('Entrada por Inventário');
     return `<tr>
       <td style="font-family:var(--font-mono);font-size:13px">${esc(row.codigo)}</td>
       <td style="color:var(--accent)">${esc(row.cliente)}</td>
@@ -1914,13 +2019,13 @@ function renderHistorico(){
       <td style="white-space:nowrap;font-family:var(--font-mono);font-size:12px">${esc(row.data)}</td>
     </tr>`;
   }).join('');
-
+ 
   pagBar.style.display = 'flex';
   document.getElementById('historico-pag-info').textContent = `Página ${window._historicoPage} de ${totalPages} · ${sorted.length} movimentação(ões)`;
   document.getElementById('hist-btn-prev').disabled = window._historicoPage<=1;
   document.getElementById('hist-btn-next').disabled = window._historicoPage>=totalPages;
 }
-
+ 
 // ── SOLICITAÇÕES DE EMBALAGENS ──────────────────────────
 async function loadSolicitacoes(){
   try{
@@ -1930,7 +2035,7 @@ async function loadSolicitacoes(){
   }catch(e){ console.error('loadSolicitacoes:',e); }
 }
 window.loadSolicitacoes = loadSolicitacoes;
-
+ 
 window.onSolClienteChange = () => {
   const cliId = document.getElementById('sol-cli').value;
   const embSel = document.getElementById('sol-emb');
@@ -1945,7 +2050,7 @@ window.onSolClienteChange = () => {
   document.getElementById('sol-saldo').value = '–';
   document.getElementById('sol-qtd').value = '';
 };
-
+ 
 window.onSolEmbChange = () => {
   const embId = document.getElementById('sol-emb').value;
   const saldoEl = document.getElementById('sol-saldo');
@@ -1953,7 +2058,7 @@ window.onSolEmbChange = () => {
   const e = window._embCat.find(x=>x.id===embId);
   saldoEl.value = e ? getSaldoDisponivel(e) : 0;
 };
-
+ 
 window.salvarSolicitacao = async () => {
   if(!['operador','administrador'].includes(window._userRole)){ showToast('Sem permissão.', true); return; }
   const cliId  = document.getElementById('sol-cli').value;
@@ -1993,7 +2098,7 @@ window.salvarSolicitacao = async () => {
     btn.disabled=false; btn.textContent='✓ Registrar Solicitação';
   }
 };
-
+ 
 window.renderSolicitacoes = () => {
   const grid = document.getElementById('sol-grid');
   if(!grid) return;
@@ -2042,7 +2147,7 @@ window.renderSolicitacoes = () => {
     </tr>`;
   }).join('');
 };
-
+ 
 window.sortSolicitacoes=(field)=>{
   const s=window._solSort;
   if(s.field===field) s.dir*=-1; else { s.field=field; s.dir=1; }
@@ -2062,7 +2167,7 @@ window.openModalAtender = (id) => {
   document.getElementById('atender-sol-id').value = id;
   document.getElementById('modal-atender').classList.add('open');
 };
-
+ 
 window.confirmarAtender = async () => {
   if(!['operador','administrador'].includes(window._userRole)){ showToast('Sem permissão.', true); return; }
   const errEl = document.getElementById('modal-atender-error');
@@ -2078,7 +2183,7 @@ window.confirmarAtender = async () => {
   // revalida o saldo no momento da confirmação, usando os dados mais recentes em memória
   const saldoAtual = e ? getSaldoDisponivel(e) : 0;
   if(qtd > saldoAtual){ showErr(errEl, `Quantidade maior que o saldo disponível (${saldoAtual}).`); return; }
-
+ 
   const btn = document.getElementById('btn-confirmar-atender');
   btn.disabled = true; btn.textContent = 'Salvando...';
   try{
@@ -2099,7 +2204,7 @@ window.confirmarAtender = async () => {
     btn.disabled=false; btn.textContent='Confirmar Atendimento';
   }
 };
-
+ 
 window.openSolDetail = (id) => {
   const s = window._solicitacoes.find(x=>x.id===id); if(!s) return;
   const isAtendido = s.status==='ATENDIDO';
@@ -2123,7 +2228,7 @@ window.openSolDetail = (id) => {
   `;
   document.getElementById('modal-sol-detail').classList.add('open');
 };
-
+ 
 window.openModalRecusar = (id) => {
   const s = window._solicitacoes.find(x=>x.id===id); if(!s) return;
   document.getElementById('modal-recusar-error').style.display='none';
@@ -2134,7 +2239,7 @@ window.openModalRecusar = (id) => {
   document.getElementById('recusar-sol-id').value = id;
   document.getElementById('modal-recusar').classList.add('open');
 };
-
+ 
 window.confirmarRecusar = async () => {
   if(!['operador','administrador'].includes(window._userRole)){ showToast('Sem permissão.', true); return; }
   const errEl = document.getElementById('modal-recusar-error');
@@ -2145,7 +2250,7 @@ window.confirmarRecusar = async () => {
   if(!s){ showErr(errEl,'Solicitação não encontrada.'); return; }
   if(s.status==='ATENDIDO'||s.status==='RECUSADO'){ showErr(errEl,'Esta solicitação já foi processada.'); return; }
   if(!motivo){ showErr(errEl,'Informe o motivo da recusa.'); return; }
-
+ 
   const btn = document.getElementById('btn-confirmar-recusar');
   btn.disabled = true; btn.textContent = 'Salvando...';
   try{
@@ -2165,7 +2270,7 @@ window.confirmarRecusar = async () => {
     btn.disabled=false; btn.textContent='Confirmar Recusa';
   }
 };
-
+ 
 window.openModalEmbCat = (id) => {
   document.getElementById('modal-emb-cat-error').style.display='none';
   populateClienteSelects();
@@ -2193,7 +2298,7 @@ window.openModalEmbCat = (id) => {
   }
   document.getElementById('modal-emb-cat').classList.add('open');
 };
-
+ 
 window.salvarEmbCat = async () => {
   const cliId   = document.getElementById('emb-cat-cli').value;
   const codigo  = document.getElementById('emb-cat-cod').value.trim().toUpperCase();
@@ -2230,7 +2335,7 @@ window.salvarEmbCat = async () => {
     renderEmbCat();
   } catch(e){showErr(errEl,'Erro: '+e.message);}
 };
-
+ 
 window.askDeleteEmb=(id)=>{
   document.getElementById('delete-emb-id').value=id;
   document.getElementById('delete-emb-pass').value='';
@@ -2250,7 +2355,7 @@ window.confirmDeleteEmb=async()=>{
     showToast('✓ Embalagem excluída.');
   }catch(e){showErr(errEl,'Erro: '+e.message);}
 };
-
+ 
 // ── IMPORTAR PLANILHA DE EMBALAGENS (apenas administrador) ─────────────
 window.openModalImportEmb = () => {
   if(window._userRole!=='administrador') return;
@@ -2265,7 +2370,7 @@ window.openModalImportEmb = () => {
   populateClienteSelects();
   document.getElementById('modal-import-emb').classList.add('open');
 };
-
+ 
 window.handleImportEmbFile = (input) => {
   const errEl=document.getElementById('modal-import-emb-error'); errEl.style.display='none';
   document.getElementById('modal-import-emb-success').style.display='none';
@@ -2293,7 +2398,7 @@ window.handleImportEmbFile = (input) => {
   reader.onerror=()=>showErr(errEl,'Erro ao ler o arquivo.');
   reader.readAsArrayBuffer(file);
 };
-
+ 
 window.processarImportEmb = async () => {
   const errEl=document.getElementById('modal-import-emb-error'); errEl.style.display='none';
   const okEl=document.getElementById('modal-import-emb-success'); okEl.style.display='none';
@@ -2301,13 +2406,13 @@ window.processarImportEmb = async () => {
   if(!cliId){showErr(errEl,'Selecione o cliente antes de processar.');return;}
   const rows=window._importEmbRows;
   if(!rows?.length){showErr(errEl,'Selecione um arquivo válido.');return;}
-
+ 
   const btn=document.getElementById('btn-processar-import-emb');
   btn.disabled=true; btn.textContent='Processando…';
-
+ 
   const numOr0 = (v)=> (v===undefined||v===null||String(v).trim()==='') ? 0 : Number(v)||0;
   const strOr0 = (v)=> (v===undefined||v===null||String(v).trim()==='') ? '0' : String(v).trim();
-
+ 
   let criadas=0, atualizadas=0, erros=0;
   for(const row of rows){
     const codigo = String(row[0]??'').trim().toUpperCase();
@@ -2337,7 +2442,7 @@ window.processarImportEmb = async () => {
   }
   window._embCat.sort((a,b)=>a.codigo.localeCompare(b.codigo));
   renderEmbCat();
-
+ 
   btn.disabled=false; btn.textContent='Processar planilha';
   const summary=document.getElementById('import-emb-summary');
   summary.style.display='block';
@@ -2350,7 +2455,7 @@ window.processarImportEmb = async () => {
   btn.disabled=true;
   showToast('✓ Planilha importada.');
 };
-
+ 
 window.addEmbRow = () => {
   const list=document.getElementById('emb-list'); if(!list) return;
   const id='emb_'+Date.now()+Math.random().toString(36).slice(2,6);
@@ -2370,7 +2475,7 @@ window.addEmbRow = () => {
     <button class="btn-rem-emb" type="button" onclick="removeEmb('${id}')">✕</button>`;
   list.appendChild(row);
 };
-
+ 
 window.onEmbRowClienteChange = (sel, rowId) => {
   const cliId = sel.value;
   const fieldDiv = document.getElementById(rowId+'_embfield');
@@ -2389,7 +2494,7 @@ window.onEmbRowClienteChange = (sel, rowId) => {
   }
   fieldDiv.innerHTML = `<label>EMBALAGEM *</label>${selectHtml}`;
 };
-
+ 
 function getEmbalagens() {
   return [...document.querySelectorAll('.emb-row')].map(r=>{
     const cliSel = r.querySelector('.emb-cli');
@@ -2402,7 +2507,161 @@ function getEmbalagens() {
   }).filter(e=>e.codigo||e.qtd||e.clienteId);
 }
 window.removeEmb=(id)=>{const el=document.getElementById(id);if(el)el.remove();};
+ 
+// ── INVENTÁRIO (Etapa 1 — interface e filtros, sem gravação ainda) ─────
+window.onInvClienteChange = () => {
+  window._invRows = [];
+  document.getElementById('inv-filtro-cod').value = '';
+  renderInventario();
+};
+ 
+function getFilteredInventario(){
+  const cliId = document.getElementById('inv-cli')?.value||'';
+  const fk = (document.getElementById('inv-filtro-cod')?.value||'').toLowerCase();
+  if(!cliId) return [];
+  return window._embCat.filter(e=>{
+    if(e.clienteId!==cliId) return false;
+    if(fk && !e.codigo?.toLowerCase().includes(fk) && !e.nomeInterno?.toLowerCase().includes(fk) && !e.descricao?.toLowerCase().includes(fk)) return false;
+    return true;
+  });
+}
+ 
+window.renderInventario = () => {
+  const grid = document.getElementById('inv-grid');
+  const empty = document.getElementById('inv-empty');
+  const btn = document.getElementById('btn-confirmar-inventario');
+  if(!grid) return;
+ 
+  const canAdmin = window._userRole === 'administrador';
+  const cliId = document.getElementById('inv-cli')?.value||'';
+  const data = getFilteredInventario();
+ 
+  if(!cliId){
+    grid.innerHTML=''; empty.style.display='block';
+    empty.querySelector('p').textContent = 'Selecione um cliente para carregar o inventário';
+    btn.disabled = true;
+    return;
+  }
+  if(!data.length){
+    grid.innerHTML=''; empty.style.display='block';
+    empty.querySelector('p').textContent = 'Nenhuma embalagem cadastrada para este cliente';
+    btn.disabled = true;
+    return;
+  }
+  empty.style.display='none';
+  btn.disabled = !canAdmin;
+ 
+  grid.innerHTML = data.map(e=>{
+    const cheiasAtual = getSaldoCheias(e);
+    const vaziasAtual = getSaldoVazias(e);
+    return `<tr>
+      <td><div style="font-family:var(--font-mono);font-size:13px">${esc(e.codigo)}</div><div style="font-size:12px;color:var(--text2)">${esc(e.descricao||'–')}</div></td>
+      <td class="col-cheias" style="font-family:var(--font-mono);font-weight:700;color:${cheiasAtual>0?'var(--accent)':'var(--text2)'}">${cheiasAtual}</td>
+      <td class="col-cheias"><input type="number" class="inv-input inv-cheias" min="0" value="${cheiasAtual}" data-emb-id="${e.id}" data-atual="${cheiasAtual}" ${canAdmin?'':'readonly'} oninput="onInvInputChange(this)"></td>
+      <td class="col-vazias" style="font-family:var(--font-mono);font-weight:700;color:${vaziasAtual>0?'#60a5fa':'var(--text2)'}">${vaziasAtual}</td>
+      <td class="col-vazias"><input type="number" class="inv-input inv-vazias" min="0" value="${vaziasAtual}" data-emb-id="${e.id}" data-atual="${vaziasAtual}" ${canAdmin?'':'readonly'} oninput="onInvInputChange(this)"></td>
+    </tr>`;
+  }).join('');
+};
+ 
+// realce visual quando o valor apurado difere do saldo atual
+window.onInvInputChange = (input) => {
+  const atual = Number(input.dataset.atual)||0;
+  const novo = Number(input.value);
+  input.classList.toggle('inv-changed', !isNaN(novo) && novo !== atual);
+};
+ 
+// ── CONFIRMAR INVENTÁRIO (Etapa 2 + Etapa 3) ────────────
+// Para cada embalagem com valor apurado diferente do saldo atual:
+//  1) calcula a diferença (Novo Saldo Apurado - Saldo Anterior) para CHEIAS e VAZIAS separadamente;
+//  2) grava um registro de movimentação em 'movimentacoes_inventario' com tipo ENTRADA POR INVENTÁRIO
+//     (diferença > 0) ou BAIXA POR INVENTÁRIO (diferença < 0), com data/hora e usuário administrador;
+//  3) window._inventarios é atualizado localmente e os saldos (getSaldoVazias/getSaldoCheias) passam
+//     a refletir imediatamente o ajuste, pois eles somam a diferença líquida de todos os ajustes de inventário.
+window.confirmarInventario = async () => {
+  if(window._userRole!=='administrador'){ showToast('Sem permissão.', true); return; }
+  const cliId = document.getElementById('inv-cli')?.value||'';
+  if(!cliId){ showToast('⚠ Selecione um cliente.', true); return; }
 
+  // coleta os valores apurados a partir dos inputs atualmente renderizados na tabela
+  const changesById = {};
+  document.querySelectorAll('#inv-grid .inv-cheias').forEach(inp=>{
+    const embId = inp.dataset.embId;
+    const atual = Number(inp.dataset.atual)||0;
+    const novo  = Number(inp.value);
+    if(isNaN(novo) || novo<0) return; // saldo nunca pode ser negativo — ignora valores inválidos
+    (changesById[embId] ||= {embId}).atualCheias = atual;
+    changesById[embId].novoCheias = novo;
+  });
+  document.querySelectorAll('#inv-grid .inv-vazias').forEach(inp=>{
+    const embId = inp.dataset.embId;
+    const atual = Number(inp.dataset.atual)||0;
+    const novo  = Number(inp.value);
+    if(isNaN(novo) || novo<0) return;
+    (changesById[embId] ||= {embId}).atualVazias = atual;
+    changesById[embId].novoVazias = novo;
+  });
+
+  const toSave = Object.values(changesById).filter(c=>{
+    const diffCheias = (c.novoCheias??c.atualCheias??0) - (c.atualCheias??0);
+    const diffVazias = (c.novoVazias??c.atualVazias??0) - (c.atualVazias??0);
+    return diffCheias!==0 || diffVazias!==0;
+  });
+
+  if(!toSave.length){ showToast('Nenhuma alteração detectada no inventário.'); return; }
+
+  const btn = document.getElementById('btn-confirmar-inventario');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  const cli = window._clientes.find(c=>c.id===cliId);
+  const usuario = window._currentUser.displayName || window._currentUser.email;
+  const dataHora = formatDt(new Date());
+
+  try{
+    const batch = writeBatch(db);
+    const novosDocs = [];
+    for(const c of toSave){
+      const e = window._embCat.find(x=>x.id===c.embId); if(!e) continue;
+      const saldoAnteriorVazias = c.atualVazias ?? getSaldoVazias(e);
+      const novoSaldoVazias     = c.novoVazias  ?? saldoAnteriorVazias;
+      const saldoAnteriorCheias = c.atualCheias ?? getSaldoCheias(e);
+      const novoSaldoCheias     = c.novoCheias  ?? saldoAnteriorCheias;
+      const diffVazias = novoSaldoVazias - saldoAnteriorVazias;
+      const diffCheias = novoSaldoCheias - saldoAnteriorCheias;
+      if(diffVazias===0 && diffCheias===0) continue;
+
+      const docData = {
+        dataHora, timestamp: serverTimestamp(),
+        usuario, uid: window._currentUser.uid,
+        clienteId: cliId, clienteNome: cli?.nome||'',
+        codigo: e.codigo, descricao: e.descricao||'',
+        diffVazias, saldoAnteriorVazias, novoSaldoVazias,
+        tipoVazias: diffVazias>0 ? 'ENTRADA POR INVENTÁRIO' : (diffVazias<0 ? 'BAIXA POR INVENTÁRIO' : null),
+        diffCheias, saldoAnteriorCheias, novoSaldoCheias,
+        tipoCheias: diffCheias>0 ? 'ENTRADA POR INVENTÁRIO' : (diffCheias<0 ? 'BAIXA POR INVENTÁRIO' : null)
+      };
+      const ref = doc(collection(db,'movimentacoes_inventario'));
+      batch.set(ref, docData);
+      novosDocs.push({ id: ref.id, ...docData, timestamp: new Date() });
+    }
+
+    if(!novosDocs.length){ showToast('Nenhuma alteração detectada no inventário.'); return; }
+
+    await batch.commit();
+    window._inventarios = [...novosDocs, ...(window._inventarios||[])];
+    showToast(`✓ Inventário confirmado! ${novosDocs.length} embalagem(ns) atualizada(s).`);
+
+    // recarrega a tabela do inventário (agora refletindo os novos "saldos atuais") e demais telas afetadas
+    onInvClienteChange();
+    if(document.getElementById('embcat-grid')) renderEmbCat();
+    if(document.getElementById('baixa-saldo-grid')) renderBaixaSaldo();
+  }catch(err){
+    showToast('✕ Erro ao confirmar inventário: '+(err.code||err.message), true);
+  }finally{
+    btn.disabled = false; btn.textContent = '✓ Confirmar Inventário';
+  }
+};
+ 
 // ── SALVAR REGISTRO ────────────────────────────────────
 window.salvarRegistro = async () => {
   if(!['operador','administrador'].includes(window._userRole)){showToast('Sem permissão.',true);return;}
@@ -2433,7 +2692,7 @@ window.salvarRegistro = async () => {
   }catch(e){showToast('✕ Erro: '+(e.code||e.message),true);}
   finally{btn.textContent='✓ Salvar Registro';btn.disabled=false;}
 };
-
+ 
 // ── LOAD REGISTROS ─────────────────────────────────────
 async function loadRegistros(){
   try{
@@ -2444,7 +2703,7 @@ async function loadRegistros(){
   }catch(e){console.error('loadRegistros:',e);showToast('Erro ao carregar registros.',true);}
 }
 window.loadRegistros=loadRegistros;
-
+ 
 // ── HELPERS DE CLIENTE(S) POR REGISTRO (compatível com registros antigos) ──
 function clientesNomesDoRegistro(r){
   if (r.clientesNomes && r.clientesNomes.length) return r.clientesNomes;
@@ -2461,7 +2720,7 @@ function registroMatchesCliente(r, fc){
 function renderBadgeEmb(e, multi){
   return `<span class="badge-emb">${multi&&e.clienteNome?`<span class="emb-cli">${esc(e.clienteNome)}:</span>`:''}<span class="emb-cod">${esc(e.codigo)}</span><span class="emb-qty">${esc(String(e.qtd))}</span></span>`;
 }
-
+ 
 // ── RENDER TABELA ──────────────────────────────────────
 window.renderTabela=()=>{
   const fc=(document.getElementById('filter-cliente')?.value||'').toLowerCase();
@@ -2514,7 +2773,7 @@ window.renderTabela=()=>{
     </tr>`;
   }).join('');
 };
-
+ 
 // ── DETAIL ─────────────────────────────────────────────
 window.openDetail=(id)=>{
   const r=window._registros.find(x=>x.id===id);if(!r)return;
@@ -2534,7 +2793,7 @@ window.openDetail=(id)=>{
   else{fs.style.display='none';}
   document.getElementById('modal-detail').classList.add('open');
 };
-
+ 
 // ── DELETE REGISTRO ────────────────────────────────────
 window.askDelete=(id)=>{
   window._pendingDeleteId=id;
@@ -2556,11 +2815,11 @@ window.confirmDelete=async()=>{
     showToast('✓ Registro excluído.');
   }catch(e){showErr(errEl,'Erro: '+(e.code||e.message));}
 };
-
+ 
 // ── FOTOS ──────────────────────────────────────────────
 window.handleFotos=async(input)=>{for(const f of Array.from(input.files)){window._fotos.push(await compressImg(f));}renderFotos();input.value='';};
 function compressImg(file,MAX=1200,q=.78){return new Promise(res=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{let w=img.width,h=img.height;if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);URL.revokeObjectURL(url);res(cv.toDataURL('image/jpeg',q));};img.src=url;});}
-
+ 
 // ── ÍCONE DO CLIENTE ────────────────────────────────────
 window._cliIconData = '';
 window.handleCliIcon = async (input) => {
@@ -2570,7 +2829,7 @@ window.handleCliIcon = async (input) => {
   prev.src=window._cliIconData; prev.style.display='inline-block'; ph.style.display='none';
   input.value='';
 };
-
+ 
 // ── IMAGEM DE CAPA DA EMBALAGEM ─────────────────────────
 window._embCapaData = '';
 window.handleEmbCapa = async (input) => {
@@ -2584,7 +2843,7 @@ function renderFotos(){document.getElementById('foto-preview').innerHTML=window.
 window.removeFoto=(i)=>{window._fotos.splice(i,1);renderFotos();};
 window.openImgViewer=(src)=>{document.getElementById('img-viewer-img').src=src;document.getElementById('img-viewer').classList.add('open');};
 window.closeImgViewer=()=>document.getElementById('img-viewer').classList.remove('open');
-
+ 
 // ── MÁSCARA DE PLACA (AAA-0A00 ou AAA-0000) ─────────────
 window.maskPlaca = (el) => {
   const raw = el.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -2598,7 +2857,7 @@ window.maskPlaca = (el) => {
   if(out.length>3) masked += '-'+out.slice(3);
   el.value = masked;
 };
-
+ 
 // ── LIMPAR FORM ────────────────────────────────────────
 window.limparForm=()=>{
   ['f-placa','f-transportadora','f-nota','f-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -2614,7 +2873,7 @@ window.limparFiltros=()=>{
   ['filter-cliente','filter-cod','filter-data-ini','filter-data-fim'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderTabela();
 };
-
+ 
 // ── EXPORT ─────────────────────────────────────────────
 // Monta as linhas (cabeçalho + dados) para exportação de CSV/XLSX de forma padronizada,
 // reutilizada pelas três telas com relatório (Consulta, Baixa de Saldo, Catálogo de Embalagens).
@@ -2649,7 +2908,7 @@ function rowsToXLSX(rows,sheetName,colWidths,fileName){
   if(colWidths) ws['!cols']=colWidths.map(w=>({wch:w}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheetName);XLSX.writeFile(wb,fileName);
 }
-
+ 
 window.exportCSV=()=>{
   const data=getFiltered();if(!data.length){showToast('Nenhum dado.',true);return;}
   dlFile('embalagens_'+ds()+'.csv','text/csv;charset=utf-8;',rowsToCSV(buildExportRows(data,'registros')));
@@ -2663,7 +2922,7 @@ function getFiltered(){
   const fk=(document.getElementById('filter-cod')?.value||'').toLowerCase();
   return window._registros.filter(r=>{if(!registroMatchesCliente(r,fc))return false;if(fk&&!r.embalagens?.some(e=>e.codigo?.toLowerCase().includes(fk)))return false;return true;});
 }
-
+ 
 window.exportBaixaCSV=()=>{
   const data=getFilteredBaixaSaldo();if(!data.length){showToast('Nenhum dado.',true);return;}
   dlFile('saldo_embalagens_'+ds()+'.csv','text/csv;charset=utf-8;',rowsToCSV(buildExportRows(data,'baixa')));
@@ -2672,7 +2931,7 @@ window.exportBaixaXLSX=()=>{
   const data=getFilteredBaixaSaldo();if(!data.length){showToast('Nenhum dado.',true);return;}
   rowsToXLSX(buildExportRows(data,'baixa'),'Saldo',[18,28,22,12,12,12],'saldo_embalagens_'+ds()+'.xlsx');
 };
-
+ 
 window.exportEmbCatCSV=()=>{
   const data=getFilteredEmbCat();if(!data.length){showToast('Nenhum dado.',true);return;}
   dlFile('catalogo_embalagens_'+ds()+'.csv','text/csv;charset=utf-8;',rowsToCSV(buildExportRows(data,'embcat')));
@@ -2681,10 +2940,10 @@ window.exportEmbCatXLSX=()=>{
   const data=getFilteredEmbCat();if(!data.length){showToast('Nenhum dado.',true);return;}
   rowsToXLSX(buildExportRows(data,'embcat'),'Catalogo',[16,26,22,16,12,10,12,18,12,16,12,12,12],'catalogo_embalagens_'+ds()+'.xlsx');
 };
-
+ 
 function dlFile(name,type,content){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
 function ds(){const d=new Date();return`${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}`;}
-
+ 
 // ── ADMIN ──────────────────────────────────────────────
 window.checkAdminPass=()=>{
   const v=document.getElementById('admin-pass-input').value;
@@ -2698,7 +2957,7 @@ window.lockAdmin=()=>{
   document.getElementById('admin-pass-input').value='';
   document.getElementById('admin-error').style.display='none';
 };
-
+ 
 async function loadUsers(){
   const list=document.getElementById('users-list');
   list.innerHTML=`<div class="empty-state"><div class="loader-ring" style="margin:0 auto"></div></div>`;
@@ -2725,7 +2984,7 @@ async function loadUsers(){
     }).join('');
   }catch(e){list.innerHTML=`<div class="empty-state"><p style="color:var(--warn)">Erro: ${e.message}</p></div>`;}
 }
-
+ 
 window.changeRole=async(docId,perfil)=>{
   try{await updateDoc(doc(db,'usuarios',docId),{perfil});showToast('✓ Perfil atualizado.');}
   catch(e){showToast('Erro: '+e.message,true);}
@@ -2734,7 +2993,7 @@ window.toggleUser=async(docId,ativo)=>{
   try{await updateDoc(doc(db,'usuarios',docId),{ativo});showToast(ativo?'✓ Usuário ativado.':'✓ Usuário bloqueado.');loadUsers();}
   catch(e){showToast('Erro: '+e.message,true);}
 };
-
+ 
 // ── NAV ────────────────────────────────────────────────
 window.switchTab=(tab)=>{
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -2745,20 +3004,21 @@ window.switchTab=(tab)=>{
   if(tab==='clientes')renderClientes();
   if(tab==='baixa')renderBaixaSaldo();
   if(tab==='solicitacoes')renderSolicitacoes();
+  if(tab==='inventario'){ if(window._userRole==='administrador') onInvClienteChange(); }
 };
-
+ 
 // ── DATETIME ───────────────────────────────────────────
 function initDatetime(){updateDt();setInterval(updateDt,1000);}
 function updateDt(){const el=document.getElementById('f-datetime');if(el)el.value=formatDt(new Date());}
 function formatDt(d){return`${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;}
 function p2(n){return String(n).padStart(2,'0');}
-
+ 
 // ── HELPERS ────────────────────────────────────────────
 window.closeModal=(id)=>document.getElementById(id).classList.remove('open');
 window.showToast=(msg,error=false)=>{const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(error?' error':'');clearTimeout(window._tt);window._tt=setTimeout(()=>{t.className='toast';},3500);};
 function showErr(el,msg){el.style.display='block';el.textContent=msg;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
+ 
 ['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico','modal-cliente-embalagens'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
 document.getElementById('img-viewer')?.addEventListener('click',function(e){if(e.target===this)closeImgViewer();});
 </script>
