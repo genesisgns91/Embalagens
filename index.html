@@ -703,6 +703,16 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
           </label>
         </div>
       </div>
+      <div class="form-card" id="auditoria-card" style="display:none;">
+        <div class="form-card-title">🧾 Auditoria e Compliance</div>
+        <div class="config-row">
+          <div>
+            <div class="config-row-title">Relatório de Auditoria (audit_logs)</div>
+            <div class="config-row-sub">Exporte o histórico completo de eventos (cadastros, entradas, baixas, solicitações e ajustes de inventário) filtrado por período, tipo, cliente ou código.</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="abrirModalExportar()">📊 Exportar Relatório</button>
+        </div>
+      </div>
       <div class="form-card-title" style="margin-bottom:14px;">Usuários cadastrados</div>
       <div id="users-list" class="users-list"></div>
     </div>
@@ -977,6 +987,46 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
   </div>
 </div>
  
+<!-- MODAL EXPORTAR RELATÓRIO DE AUDITORIA -->
+<div id="modal-exportar-auditoria" class="modal-overlay">
+  <div class="modal" style="max-width:600px;">
+    <button class="modal-close" onclick="closeModal('modal-exportar-auditoria')">✕</button>
+    <div class="modal-title">🧾 Exportar Relatório de Auditoria</div>
+    <div id="modal-exportar-auditoria-error" class="error-msg"></div>
+    <div class="form-grid">
+      <div class="field"><label>PERÍODO DE</label><input type="date" id="aud-data-ini"></div>
+      <div class="field"><label>PERÍODO ATÉ</label><input type="date" id="aud-data-fim"></div>
+      <div class="field full">
+        <label style="display:flex;align-items:center;justify-content:space-between;">
+          TIPOS DE EVENTO
+          <span style="display:flex;align-items:center;gap:6px;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text2);cursor:pointer;">
+            <input type="checkbox" id="aud-tipo-todos" checked onchange="toggleAllTipoEventoAudit(this.checked)" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;"> Selecionar Todos
+          </span>
+        </label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;">
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" class="aud-tipo-chk" data-value="CADASTRO_NOVO" checked onchange="syncTipoTodosCheckbox()" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;"> Cadastro Novo</label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" class="aud-tipo-chk" data-value="EDICAO_CADASTRO" checked onchange="syncTipoTodosCheckbox()" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;"> Edição de Cadastro</label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" class="aud-tipo-chk" data-value="EXCLUSAO_CADASTRO" checked onchange="syncTipoTodosCheckbox()" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;"> Exclusão de Cadastro</label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" class="aud-tipo-chk" data-value="ENTRADA" checked onchange="syncTipoTodosCheckbox()" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;"> Entrada de Estoque</label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" class="aud-tipo-chk" data-value="SAIDA_BAIXA" checked onchange="syncTipoTodosCheckbox()" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;"> Saída – Baixa Manual</label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" class="aud-tipo-chk" data-value="SAIDA_SOLICITACAO" checked onchange="syncTipoTodosCheckbox()" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;"> Saída – Solicitação Atendida</label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" class="aud-tipo-chk" data-value="AJUSTE_INVENTARIO" checked onchange="syncTipoTodosCheckbox()" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;"> Ajuste de Inventário</label>
+        </div>
+      </div>
+      <div class="field full"><label>CLIENTES <span style="color:var(--text2);font-weight:400;text-transform:none;letter-spacing:0;">(nenhum selecionado = todos)</span></label>
+        <select id="aud-clientes" multiple style="height:120px;"></select>
+      </div>
+      <div class="field full"><label>CÓDIGO(S) DO ITEM <span style="color:var(--text2);font-weight:400;text-transform:none;letter-spacing:0;">(separe por vírgula · vazio = todos)</span></label>
+        <input type="text" id="aud-codigo" placeholder="Ex: EMB-001, EMB-002">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-primary" style="flex:1" id="btn-gerar-excel-auditoria" onclick="exportarRelatorioExcel()">📊 Gerar e Baixar Excel</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-exportar-auditoria')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL HISTÓRICO DE MOVIMENTAÇÕES -->
 <div id="modal-historico" class="modal-overlay">
   <div class="modal" style="max-width:min(1025px,95vw);">
@@ -1020,6 +1070,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 <div class="toast" id="toast"></div>
  
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -1045,8 +1096,43 @@ function checkAdminPassOrFail(pass, errElement){
   return true;
 }
  
+// ── AUDITORIA / LOG DE EVENTOS IMUTÁVEL (audit_logs) ────
+// Grava um registro imutável de auditoria no Firestore. Nunca lança erro para
+// o fluxo chamador — falha de log não deve travar a operação de negócio.
+async function registrarAuditLog(dados) {
+  try {
+    const usuario = window._currentUser?.displayName || window._currentUser?.email || 'Sistema';
+    await addDoc(collection(db,'audit_logs'), {
+      dataHora: serverTimestamp(),
+      dataHoraLocal: formatDt(new Date()),
+      usuario,
+      uid: window._currentUser?.uid || null,
+      tipoEvento: dados.tipoEvento || '',
+      codigoItem: dados.codigoItem || '',
+      cliente: dados.cliente || '',
+      qtdVazias: dados.qtdVazias ?? 0,
+      qtdCheias: dados.qtdCheias ?? 0,
+      detalhes: dados.detalhes ?? null
+    });
+  } catch(e) {
+    console.error('registrarAuditLog:', e);
+  }
+}
+window.registrarAuditLog = registrarAuditLog;
+
 // ROLES: visualizador | operador | administrador
 const ROLE_LABELS = { visualizador:'Visualizador', operador:'Operador', administrador:'Administrador' };
+ 
+// Labels amigáveis para os tipos de evento de auditoria (usados no relatório exportado)
+const TIPO_EVENTO_LABELS = {
+  CADASTRO_NOVO:      'Cadastro Novo',
+  EDICAO_CADASTRO:    'Edição de Cadastro',
+  EXCLUSAO_CADASTRO:  'Exclusão de Cadastro',
+  ENTRADA:            'Entrada de Estoque',
+  SAIDA_BAIXA:        'Saída – Baixa Manual',
+  SAIDA_SOLICITACAO:  'Saída – Solicitação Atendida',
+  AJUSTE_INVENTARIO:  'Ajuste de Inventário'
+};
  
 window._registros   = [];
 window._clientes    = [];
@@ -1121,6 +1207,10 @@ function applyRoleUI() {
   // Config de módulos (Adm) — visível apenas para administrador
   const cfgCard = document.getElementById('config-modulo-card');
   if (cfgCard) cfgCard.style.display = canAdmin ? 'block' : 'none';
+
+  // Auditoria e Compliance (Adm) — visível apenas para administrador
+  const audCard = document.getElementById('auditoria-card');
+  if (audCard) audCard.style.display = canAdmin ? 'block' : 'none';
  
   // Inventário — acesso exclusivo de administrador
   const invNoAccess = document.getElementById('inv-no-access');
@@ -1350,15 +1440,24 @@ window.salvarCliente = async () => {
   const icone = window._cliIconData||'';
   try {
     if (editId) {
+      const antes = window._clientes.find(c=>c.id===editId);
       await updateDoc(doc(db,'clientes',editId),{nome,dx:Number(dx),icone});
       const idx = window._clientes.findIndex(c=>c.id===editId);
       if(idx>-1) window._clientes[idx]={...window._clientes[idx],nome,dx:Number(dx),icone};
       showToast('✓ Cliente atualizado.');
+      registrarAuditLog({
+        tipoEvento:'EDICAO_CADASTRO', codigoItem:'', cliente:nome,
+        detalhes:{ tipo:'cliente', antes:{nome:antes?.nome,dx:antes?.dx}, depois:{nome,dx:Number(dx)} }
+      });
     } else {
       const ref = await addDoc(collection(db,'clientes'),{nome,dx:Number(dx),icone,criadoEm:serverTimestamp()});
       window._clientes.push({id:ref.id,nome,dx:Number(dx),icone});
       window._clientes.sort((a,b)=>a.nome.localeCompare(b.nome));
       showToast('✓ Cliente cadastrado.');
+      registrarAuditLog({
+        tipoEvento:'CADASTRO_NOVO', codigoItem:'', cliente:nome,
+        detalhes:{ tipo:'cliente', dx:Number(dx) }
+      });
     }
     closeModal('modal-cliente');
     populateClienteSelects();
@@ -1379,9 +1478,10 @@ window.confirmDeleteCli = async () => {
   errEl.style.display='none';
   if(!checkAdminPassOrFail(pass,errEl))return;
   try {
+    const cliAntes = window._clientes.find(c=>c.id===id);
+    const linked = window._embCat.filter(e=>e.clienteId===id);
     await deleteDoc(doc(db,'clientes',id));
     // also delete linked embalagens
-    const linked = window._embCat.filter(e=>e.clienteId===id);
     await Promise.all(linked.map(e=>deleteDoc(doc(db,'embalagensCat',e.id))));
     window._clientes = window._clientes.filter(c=>c.id!==id);
     window._embCat   = window._embCat.filter(e=>e.clienteId!==id);
@@ -1389,6 +1489,10 @@ window.confirmDeleteCli = async () => {
     populateClienteSelects();
     renderClientes(); renderEmbCat();
     showToast('✓ Cliente excluído.');
+    registrarAuditLog({
+      tipoEvento:'EXCLUSAO_CADASTRO', codigoItem:'', cliente:cliAntes?.nome||'',
+      detalhes:{ tipo:'cliente', clienteExcluido:cliAntes||null, embalagensVinculadasExcluidas: linked.map(e=>e.codigo) }
+    });
   } catch(e){showErr(errEl,'Erro: '+e.message);}
 };
  
@@ -1879,6 +1983,11 @@ window.confirmarBaixa = async () => {
     });
  
     showToast('✓ Baixa registrada!');
+    registrarAuditLog({
+      tipoEvento:'SAIDA_BAIXA', codigoItem:codigo, cliente:cli?.nome||'',
+      qtdVazias:-qtdVazias, qtdCheias:-qtdCheias,
+      detalhes:{ obs, saldoVaziasApos, saldoCheiasApos }
+    });
     limparFormBaixa();
     closeModal('modal-baixa');
     // atualiza dinamicamente os saldos exibidos na aba de Baixas e no Catálogo de Embalagens
@@ -2246,6 +2355,11 @@ window.confirmarAtender = async () => {
     if(idx>-1) window._embCat[idx] = { ...window._embCat[idx], saldoVazias: saldoVaziasApos, saldoCheias: saldoCheiasApos };
  
     showToast('✓ Solicitação atendida!');
+    registrarAuditLog({
+      tipoEvento:'SAIDA_SOLICITACAO', codigoItem:s.codigo||'', cliente:s.clienteNome||'',
+      qtdVazias:-qtd, qtdCheias:qtd,
+      detalhes:{ solicitacaoId:id, qtdSolicitada:s.qtdSolicitada, qtdAtendida:qtd, saldoVaziasApos, saldoCheiasApos }
+    });
     closeModal('modal-atender');
     renderSolicitacoes();
     if(document.getElementById('tab-baixa')?.classList.contains('active')) renderBaixaSaldo();
@@ -2372,16 +2486,27 @@ window.salvarEmbCat = async () => {
     itens:       document.getElementById('emb-cat-itens').value.trim(),
     capa:        window._embCapaData||'' };
   try {
+    const cliNome = window._clientes.find(c=>c.id===cliId)?.nome||'';
     if(editId){
+      const antes = window._embCat.find(e=>e.id===editId);
       await updateDoc(doc(db,'embalagensCat',editId),data);
       const idx=window._embCat.findIndex(e=>e.id===editId);
       if(idx>-1) window._embCat[idx]={...window._embCat[idx],...data};
       showToast('✓ Embalagem atualizada.');
+      registrarAuditLog({
+        tipoEvento:'EDICAO_CADASTRO', codigoItem:codigo, cliente:cliNome,
+        detalhes:{ tipo:'embalagem', antes:{descricao:antes?.descricao,nomeInterno:antes?.nomeInterno,codDatasul:antes?.codDatasul,qtdFardo:antes?.qtdFardo,valor:antes?.valor,itens:antes?.itens}, depois:{descricao:data.descricao,nomeInterno:data.nomeInterno,codDatasul:data.codDatasul,qtdFardo:data.qtdFardo,valor:data.valor,itens:data.itens} }
+      });
     } else {
       const ref=await addDoc(collection(db,'embalagensCat'),{...data,criadoEm:serverTimestamp()});
       window._embCat.push({id:ref.id,...data});
       window._embCat.sort((a,b)=>a.codigo.localeCompare(b.codigo));
       showToast('✓ Embalagem cadastrada.');
+      registrarAuditLog({
+        tipoEvento:'CADASTRO_NOVO', codigoItem:codigo, cliente:cliNome,
+        qtdVazias:0, qtdCheias:0,
+        detalhes:{ tipo:'embalagem', descricao:data.descricao, nomeInterno:data.nomeInterno }
+      });
     }
     closeModal('modal-emb-cat');
     renderEmbCat();
@@ -2401,10 +2526,17 @@ window.confirmDeleteEmb=async()=>{
   errEl.style.display='none';
   if(!checkAdminPassOrFail(pass,errEl))return;
   try{
+    const embAntes = window._embCat.find(e=>e.id===id);
+    const cliNome = window._clientes.find(c=>c.id===embAntes?.clienteId)?.nome||'';
     await deleteDoc(doc(db,'embalagensCat',id));
     window._embCat=window._embCat.filter(e=>e.id!==id);
     closeModal('modal-delete-emb'); renderEmbCat();
     showToast('✓ Embalagem excluída.');
+    registrarAuditLog({
+      tipoEvento:'EXCLUSAO_CADASTRO', codigoItem:embAntes?.codigo||'', cliente:cliNome,
+      qtdVazias: -(getSaldoVazias(embAntes||{})||0), qtdCheias: -(getSaldoCheias(embAntes||{})||0),
+      detalhes:{ tipo:'embalagem', embalagemExcluida:embAntes||null }
+    });
   }catch(e){showErr(errEl,'Erro: '+e.message);}
 };
  
@@ -2725,6 +2857,13 @@ window.confirmarInventario = async () => {
     });
  
     showToast(`✓ Inventário confirmado: ${linhasAlteradas.length} embalagem(ns) ajustada(s).`);
+    resultados.forEach(res=>{
+      registrarAuditLog({
+        tipoEvento:'AJUSTE_INVENTARIO', codigoItem:res.codigo||'', cliente:cli?.nome||'',
+        qtdVazias: res.saldoVazias - res.vaziasAntes, qtdCheias: res.saldoCheias - res.cheiasAntes,
+        detalhes:{ antes:{cheias:res.cheiasAntes,vazias:res.vaziasAntes}, depois:{cheias:res.saldoCheias,vazias:res.saldoVazias} }
+      });
+    });
     onInvClienteChange(); // recarrega a tela usando os novos saldos como baseline
     if (document.getElementById('embcat-grid')) renderEmbCat();
     if (document.getElementById('baixa-saldo-grid')) renderBaixaSaldo();
@@ -2759,6 +2898,13 @@ window.salvarRegistro = async () => {
       embalagens:embs, obs, fotos:window._fotos
     });
     showToast('✓ Registro salvo!');
+    embs.forEach(item=>{
+      registrarAuditLog({
+        tipoEvento:'ENTRADA', codigoItem:item.codigo, cliente:item.clienteNome||'',
+        qtdVazias:Number(item.qtd)||0, qtdCheias:0,
+        detalhes:{ nota, placa, transportadora, obs }
+      });
+    });
     limparForm();
     await loadRegistros();
     switchTab('consulta');
@@ -3067,6 +3213,122 @@ window.toggleUser=async(docId,ativo)=>{
   catch(e){showToast('Erro: '+e.message,true);}
 };
  
+// ── EXPORTAÇÃO DO RELATÓRIO DE AUDITORIA (audit_logs) ───
+window.abrirModalExportar = () => {
+  if (window._userRole !== 'administrador') { showToast('Sem permissão.', true); return; }
+  document.getElementById('aud-data-ini').value = '';
+  document.getElementById('aud-data-fim').value = '';
+  document.querySelectorAll('.aud-tipo-chk').forEach(chk=>chk.checked=true);
+  document.getElementById('aud-tipo-todos').checked = true;
+  document.getElementById('aud-codigo').value = '';
+  const cliSel = document.getElementById('aud-clientes');
+  cliSel.innerHTML = window._clientes.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join('');
+  document.getElementById('modal-exportar-auditoria-error').style.display = 'none';
+  document.getElementById('modal-exportar-auditoria').classList.add('open');
+};
+ 
+window.toggleAllTipoEventoAudit = (checked) => {
+  document.querySelectorAll('.aud-tipo-chk').forEach(chk=>chk.checked=checked);
+};
+ 
+// mantém o checkbox "Selecionar Todos" sincronizado quando o usuário altera um tipo individualmente
+window.syncTipoTodosCheckbox = () => {
+  const all = document.querySelectorAll('.aud-tipo-chk');
+  const marcados = document.querySelectorAll('.aud-tipo-chk:checked').length;
+  document.getElementById('aud-tipo-todos').checked = (marcados === all.length);
+};
+ 
+// converte o campo "detalhes" (string ou objeto, possivelmente aninhado) em uma linha legível para a planilha
+function detalhesToString(det) {
+  if (det == null) return '–';
+  if (typeof det === 'string') return det;
+  const partes = [];
+  const flatten = (obj, prefixo='') => {
+    Object.entries(obj).forEach(([k,v])=>{
+      if (v == null) return;
+      if (typeof v === 'object' && !Array.isArray(v)) {
+        flatten(v, prefixo ? `${prefixo}.${k}` : k);
+      } else {
+        const val = Array.isArray(v) ? v.join(', ') : v;
+        partes.push(`${prefixo?prefixo+'.':''}${k}: ${val}`);
+      }
+    });
+  };
+  try { flatten(det); } catch(e) { return JSON.stringify(det); }
+  return partes.length ? partes.join(' | ') : '–';
+}
+ 
+window.exportarRelatorioExcel = async () => {
+  if (window._userRole !== 'administrador') { showToast('Sem permissão.', true); return; }
+  const errEl = document.getElementById('modal-exportar-auditoria-error');
+  errEl.style.display = 'none';
+ 
+  const dataIni = document.getElementById('aud-data-ini').value || '';
+  const dataFim = document.getElementById('aud-data-fim').value || '';
+  const tiposSelecionados = [...document.querySelectorAll('.aud-tipo-chk:checked')].map(c=>c.dataset.value);
+  if (!tiposSelecionados.length) { showErr(errEl,'Selecione ao menos um tipo de evento.'); return; }
+  const clientesSelecionados = [...document.getElementById('aud-clientes').selectedOptions].map(o=>o.value);
+  const codigoRaw = document.getElementById('aud-codigo').value.trim().toLowerCase();
+  const codigosFiltro = codigoRaw ? codigoRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+ 
+  const btn = document.getElementById('btn-gerar-excel-auditoria');
+  btn.disabled = true; btn.textContent = 'Gerando...';
+ 
+  try {
+    // busca o histórico completo ordenado cronologicamente e aplica os filtros no cliente
+    // (evita exigir índices compostos no Firestore para as diversas combinações de filtro)
+    const snap = await getDocs(query(collection(db,'audit_logs'), orderBy('dataHora','asc')));
+    let logs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+ 
+    logs = logs.filter(l=>{
+      if (!tiposSelecionados.includes(l.tipoEvento)) return false;
+      if (clientesSelecionados.length && !clientesSelecionados.includes(l.cliente)) return false;
+      if (codigosFiltro.length && !codigosFiltro.some(c=>(l.codigoItem||'').toLowerCase().includes(c))) return false;
+      if (dataIni || dataFim) {
+        const ts = l.dataHora?.toDate ? l.dataHora.toDate() : null;
+        if (!ts) return false;
+        const ymd = `${ts.getFullYear()}-${p2(ts.getMonth()+1)}-${p2(ts.getDate())}`;
+        if (dataIni && ymd < dataIni) return false;
+        if (dataFim && ymd > dataFim) return false;
+      }
+      return true;
+    });
+ 
+    if (!logs.length) { showErr(errEl,'Nenhum registro de auditoria encontrado para os filtros selecionados.'); return; }
+ 
+    const rows = [['Data/Hora','Usuário','Tipo de Evento','Código do Item','Cliente','Qtd. Vazias','Qtd. Cheias','Detalhes']];
+    logs.forEach(l=>{
+      const ts = l.dataHora?.toDate ? l.dataHora.toDate() : null;
+      const dataHoraFmt = ts ? formatDt(ts) : (l.dataHoraLocal || '–');
+      rows.push([
+        dataHoraFmt,
+        l.usuario || '–',
+        TIPO_EVENTO_LABELS[l.tipoEvento] || l.tipoEvento || '–',
+        l.codigoItem || '–',
+        l.cliente || '–',
+        l.qtdVazias ?? 0,
+        l.qtdCheias ?? 0,
+        detalhesToString(l.detalhes)
+      ]);
+    });
+ 
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [18,22,26,16,24,12,12,60].map(w=>({wch:w}));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Auditoria');
+    const d = new Date();
+    const fname = `relatorio_auditoria_${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}.xlsx`;
+    XLSX.writeFile(wb, fname);
+ 
+    showToast(`✓ Relatório gerado: ${logs.length} evento(s).`);
+    closeModal('modal-exportar-auditoria');
+  } catch(err) {
+    showErr(errEl, 'Erro ao gerar relatório: '+(err.message||err.code||''));
+  } finally {
+    btn.disabled = false; btn.textContent = '📊 Gerar e Baixar Excel';
+  }
+};
+ 
 // ── NAV ────────────────────────────────────────────────
 window.switchTab=(tab)=>{
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -3092,7 +3354,7 @@ window.showToast=(msg,error=false)=>{const t=document.getElementById('toast');t.
 function showErr(el,msg){el.style.display='block';el.textContent=msg;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
  
-['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico','modal-cliente-embalagens'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
+['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico','modal-cliente-embalagens','modal-exportar-auditoria'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
 document.getElementById('img-viewer')?.addEventListener('click',function(e){if(e.target===this)closeImgViewer();});
 </script>
 </body>
