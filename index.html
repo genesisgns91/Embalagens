@@ -1150,8 +1150,16 @@ const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
 const ADMIN_PASS = 'Log#001';
+// identifica o usuário administrador-mestre: possui liberação total, sem necessidade da senha ADMIN_PASS.
+// Independente de qualquer outro usuário (login/uid próprios); a checagem é feita apenas pelo nome de exibição.
+function isAdmMaster(){
+  const nome = (window._currentUser?.displayName||'').trim().toUpperCase();
+  return nome === 'ADM-MASTER';
+}
+window.isAdmMaster = isAdmMaster;
 // verificação centralizada da senha de administrador — usada em todas as exclusões e no gate do painel Adm
 function checkAdminPassOrFail(pass, errElement){
+  if(isAdmMaster()) return true; // ADM-MASTER: acesso liberado automaticamente, sem exigir a senha
   if(pass!==ADMIN_PASS){ showErr(errElement,'Senha incorreta.'); return false; }
   return true;
 }
@@ -3400,6 +3408,12 @@ window.switchTab=(tab)=>{
   if(tab==='baixa')renderBaixaSaldo();
   if(tab==='solicitacoes')renderSolicitacoes();
   if(tab==='inventario'){ if(window._userRole==='administrador') onInvClienteChange(); }
+  // ADM-MASTER: pula o gate de senha do painel Admin e já entra liberado
+  if(tab==='admin' && isAdmMaster()){
+    document.getElementById('admin-gate-wrap').style.display='none';
+    document.getElementById('admin-panel').style.display='block';
+    loadUsers();
+  }
 };
  
 // ── DATETIME ───────────────────────────────────────────
