@@ -1151,8 +1151,10 @@ const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
 const ADMIN_PASS = 'Log#001';
 // identifica o usuário administrador-mestre: possui liberação total, sem necessidade da senha ADMIN_PASS.
-// Independente de qualquer outro usuário (login/uid próprios); a checagem é feita apenas pelo nome de exibição.
+// Fonte da verdade é o campo admMaster no documento /usuarios/{uid} (definido no painel Admin).
 function isAdmMaster(){
+  if (window._isAdmMaster === true) return true;
+  // compatibilidade com a conta criada antes desta atualização (identificada só pelo nome)
   const nome = (window._currentUser?.displayName||'').trim().toUpperCase();
   return nome === 'ADM-MASTER';
 }
@@ -1229,6 +1231,7 @@ window._ajustesInventario = [];
 window._fotos       = [];
 window._currentUser = null;
 window._userRole    = 'visualizador';
+window._isAdmMaster = false;
 window._pendingDeleteId = null;
 window._moduloEstoqueAtivo = false;
  
@@ -1250,9 +1253,11 @@ onAuthStateChanged(auth, async (user) => {
       }
       if (ud) {
         window._userRole = ud.perfil || 'operador';
+        window._isAdmMaster = ud.admMaster === true;
         if (ud.ativo === false) { await signOut(auth); showAuthErr('Sua conta está bloqueada. Contate o administrador.'); return; }
       } else {
         window._userRole = 'operador';
+        window._isAdmMaster = false;
       }
     } catch(e) { window._userRole = 'operador'; }
  
@@ -3277,7 +3282,7 @@ async function loadUsers(){
     const snap=await getDocs(collection(db,'usuarios'));
     if(snap.empty){list.innerHTML=`<div class="empty-state"><div class="empty-icon">👥</div><p>Nenhum usuário ainda.</p></div>`;return;}
     list.innerHTML=snap.docs.map(d=>{
-      const u=d.data();const ativo=u.ativo!==false;const perfil=u.perfil||'operador';
+      const u=d.data();const ativo=u.ativo!==false;const perfil=u.perfil||'operador';const admMaster=u.admMaster===true;
       return`<div class="user-row">
         <div class="user-info">
           <div class="uname">${esc(u.nome||'–')}</div>
@@ -3289,6 +3294,13 @@ async function loadUsers(){
             <option value="operador"     ${perfil==='operador'?'selected':''}>Operador</option>
             <option value="administrador"${perfil==='administrador'?'selected':''}>Administrador</option>
           </select>
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer;" title="ADM-MASTER: acesso administrativo total, sem exigir a senha de administrador">
+            <span class="switch">
+              <input type="checkbox" ${admMaster?'checked':''} onchange="toggleAdmMaster('${d.id}',this.checked,this)">
+              <span class="slider"></span>
+            </span>
+            ADM-MASTER
+          </label>
           <span class="user-status ${ativo?'status-active':'status-blocked'} role-tag">${ativo?'Ativo':'Bloqueado'}</span>
           ${ativo?`<button class="btn btn-danger btn-sm" onclick="toggleUser('${d.id}',false)">Bloquear</button>`:`<button class="btn btn-secondary btn-sm" onclick="toggleUser('${d.id}',true)">Ativar</button>`}
         </div>
@@ -3298,8 +3310,47 @@ async function loadUsers(){
 }
  
 window.changeRole=async(docId,perfil)=>{
-  try{await updateDoc(doc(db,'usuarios',docId),{perfil});showToast('✓ Perfil atualizado.');}
+  try{
+    const data = { perfil };
+    // ADM-MASTER exige perfil administrador; rebaixar o perfil remove automaticamente o status de ADM-MASTER
+    if (perfil !== 'administrador') data.admMaster = false;
+    await updateDoc(doc(db,'usuarios',docId),data);
+    showToast('✓ Perfil atualizado.');
+    if (window._currentUser?.uid === docId) {
+      window._userRole = perfil;
+      if (perfil !== 'administrador') window._isAdmMaster = false;
+      const roleEl = document.getElementById('topbar-role');
+      if (roleEl) { roleEl.textContent = ROLE_LABELS[perfil] || perfil; roleEl.className = `role-tag role-${perfil}`; }
+      applyRoleUI();
+    }
+    loadUsers();
+  }
   catch(e){showToast('Erro: '+e.message,true);}
+};
+window.toggleAdmMaster=async(docId,checked,checkboxEl)=>{
+  if (window._userRole!=='administrador' && !isAdmMaster()) { showToast('Sem permissão.', true); if(checkboxEl) checkboxEl.checked=!checked; return; }
+  if (checkboxEl) checkboxEl.disabled = true;
+  try{
+    // ativar ADM-MASTER garante perfil administrador junto; desativar só remove a liberação extra
+    const data = checked ? { admMaster:true, perfil:'administrador' } : { admMaster:false };
+    await updateDoc(doc(db,'usuarios',docId), data);
+    showToast(checked ? '✓ Usuário definido como ADM-MASTER.' : '✓ ADM-MASTER removido deste usuário.');
+    if (window._currentUser?.uid === docId) {
+      window._isAdmMaster = checked;
+      if (checked) {
+        window._userRole = 'administrador';
+        const roleEl = document.getElementById('topbar-role');
+        if (roleEl) { roleEl.textContent = ROLE_LABELS['administrador']; roleEl.className = 'role-tag role-administrador'; }
+      }
+      applyRoleUI();
+    }
+    loadUsers();
+  }catch(e){
+    showToast('Erro: '+e.message,true);
+    if (checkboxEl) checkboxEl.checked = !checked;
+  }finally{
+    if (checkboxEl) checkboxEl.disabled = false;
+  }
 };
 window.toggleUser=async(docId,ativo)=>{
   try{await updateDoc(doc(db,'usuarios',docId),{ativo});showToast(ativo?'✓ Usuário ativado.':'✓ Usuário bloqueado.');loadUsers();}
