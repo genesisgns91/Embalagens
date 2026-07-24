@@ -165,6 +165,22 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 .table-solicitacoes th:nth-child(6),.table-solicitacoes td:nth-child(6){width:10%;}
 .table-solicitacoes th:nth-child(7),.table-solicitacoes td:nth-child(7){width:18%;}
  
+/* CONSULTA — MOBILE (mantém apenas Data / Cliente / Embalagens visíveis; o resto abre no modal de detalhes) */
+.table-consulta tbody tr{cursor:pointer;}
+@media(max-width:600px){
+  .table-consulta th:nth-child(2),.table-consulta td:nth-child(2),
+  .table-consulta th:nth-child(3),.table-consulta td:nth-child(3),
+  .table-consulta th:nth-child(4),.table-consulta td:nth-child(4),
+  .table-consulta th:nth-child(6),.table-consulta td:nth-child(6),
+  .table-consulta th:nth-child(8),.table-consulta td:nth-child(8),
+  .table-consulta th:nth-child(9),.table-consulta td:nth-child(9){
+    display:none;
+  }
+  .table-consulta th:nth-child(1),.table-consulta td:nth-child(1){font-size:11px;}
+  .table-consulta td:nth-child(7){white-space:normal;}
+  .table-consulta th,.table-consulta td{padding:10px 10px;}
+}
+ 
 /* SOLICITAÇÕES — MOBILE (cards empilhados no lugar da tabela) */
 @media(max-width:768px){
   #tab-solicitacoes .table-wrap{background:transparent;border:none;border-radius:0;overflow:visible;}
@@ -232,6 +248,19 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:20px;}
 .detail-item label{font-size:11px;color:var(--text2);display:block;margin-bottom:2px;}
  
+/* MODAL DE SALDOS DO CLIENTE — subtexto mobile (descrição/nome interno) fica oculto no desktop */
+.cliemb-sub-mobile{display:none;}
+@media(max-width:600px){
+  .modal{padding:20px 16px;border-radius:14px;}
+  .table-cliemb th:nth-child(2),.table-cliemb td:nth-child(2),
+  .table-cliemb th:nth-child(3),.table-cliemb td:nth-child(3){display:none;}
+  .table-cliemb th,.table-cliemb td{padding:9px 8px;font-size:12px;}
+  .cliemb-sub-mobile{display:block;font-size:11px;color:var(--text2);margin-top:2px;font-weight:400;white-space:normal;}
+  .table-cliemb td.col-vazias,.table-cliemb td.col-cheias{font-size:16px;font-weight:800;}
+  .table-cliemb th.col-vazias,.table-cliemb th.col-cheias{font-size:10px;}
+  .table-cliemb td.col-total{font-size:12px;opacity:.75;}
+}
+ 
 /* ADMIN */
 .admin-gate{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:400px;margin:0 auto;}
 .users-list{display:flex;flex-direction:column;gap:10px;}
@@ -292,6 +321,8 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
   .nav-tabs{padding:0 8px;}.nav-tab{padding:12px 10px;font-size:12px;}
   .form-card{padding:20px 16px;}.detail-grid{grid-template-columns:1fr;}
   .catalog-grid{grid-template-columns:1fr;}
+  .filter-bar{flex-direction:column;align-items:stretch;}
+  .filter-bar .field,.filter-bar > div{width:100%;min-width:0;}
 }
 </style>
 </head>
@@ -434,7 +465,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
     <div class="table-wrap">
       <div style="overflow-x:auto;">
-        <table>
+        <table class="table-consulta">
           <thead><tr>
             <th class="sortable" onclick="sortRegistros('data')">Data / Hora<span class="sort-ind" id="sort-ind-reg-data"></span></th>
             <th class="sortable" onclick="sortRegistros('usuario')">Usuário<span class="sort-ind" id="sort-ind-reg-usuario"></span></th>
@@ -629,7 +660,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
       <div class="field"><label>FILTRAR POR STATUS</label>
         <select id="filter-sol-status" onchange="renderSolicitacoes()">
           <option value="">Todos</option>
-          <option value="PENDENTE">Pendente</option>
+          <option value="PENDENTE" selected>Pendente</option>
           <option value="ATENDIDO">Atendido</option>
           <option value="RECUSADO">Recusado</option>
         </select>
@@ -831,7 +862,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     </div>
     <div class="table-wrap">
       <div style="overflow-x:auto;">
-        <table>
+        <table class="table-cliemb">
           <thead><tr>
             <th>Embalagem</th>
             <th>Descrição</th>
@@ -1560,7 +1591,7 @@ function renderClienteEmbalagensModal(){
       <td class="col-cheias" style="font-family:var(--font-mono);font-weight:700;color:${cheias>0?'var(--accent)':'var(--text2)'}">${cheias}</td>
       <td class="col-total" style="font-family:var(--font-mono);font-weight:700;color:${total>0?'var(--text)':'var(--text3)'}">${total}</td>` : '';
     return `<tr>
-      <td><div class="name-cell">${e.capa?`<img src="${e.capa}" class="list-thumb" alt="">`:`<div class="list-thumb-placeholder">📦</div>`}<span style="font-family:var(--font-mono);font-size:13px">${esc(e.codigo)}</span></div></td>
+      <td><div class="name-cell">${e.capa?`<img src="${e.capa}" class="list-thumb" alt="">`:`<div class="list-thumb-placeholder">📦</div>`}<div><div style="font-family:var(--font-mono);font-size:13px">${esc(e.codigo)}</div><div class="cliemb-sub-mobile">${esc([e.descricao,e.nomeInterno].filter(Boolean).join(' · ')||'–')}</div></div></div></td>
       <td>${esc(e.descricao||'–')}</td>
       <td>${esc(e.nomeInterno||'–')}</td>
       ${estoqueCols}
@@ -3004,7 +3035,7 @@ window.renderTabela=()=>{
     const nomes = clientesNomesDoRegistro(r);
     const multi = nomes.length > 1;
     return `
-    <tr>
+    <tr class="row-consulta" onclick="if(!event.target.closest('button'))openDetail('${r.id}')" title="Clique para ver os detalhes completos">
       <td style="white-space:nowrap;font-family:var(--font-mono);font-size:12px">${r.dataHora||'–'}</td>
       <td>${esc(r.usuario||'–')}</td>
       <td style="font-family:var(--font-mono);font-size:12px">${esc(r.placa||'–')}</td>
