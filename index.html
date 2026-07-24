@@ -176,10 +176,11 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.15);
   }
   .table-solicitacoes tr:hover td{background:none;}
-  .table-solicitacoes td{
+  .table-wrap .table-solicitacoes td{
     display:flex;align-items:center;justify-content:space-between;gap:14px;
     padding:9px 0;border-bottom:1px dashed var(--border);text-align:right;
-    white-space:normal;word-break:break-word;
+    white-space:normal;word-break:normal;overflow-wrap:break-word;
+    width:auto !important;max-width:none !important;
   }
   .table-solicitacoes td:last-child{border-bottom:none;padding-bottom:0;}
   .table-solicitacoes td:first-child{padding-top:0;}
