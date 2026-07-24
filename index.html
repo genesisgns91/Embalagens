@@ -1202,6 +1202,24 @@ const TIPO_EVENTO_LABELS = {
   AJUSTE_INVENTARIO:  'Ajuste de Inventário'
 };
  
+// ── MIGRAÇÃO ÚNICA: usuarios com ID do documento = UID ──────────────────
+// Necessário para as novas regras de segurança do Firestore (que usam get() por UID).
+// Rode UMA VEZ, logado como administrador: abra o console do navegador (F12) nesta página
+// já carregada e digite:  migrarUsuariosParaUid()
+window.migrarUsuariosParaUid = async function(){
+  if (window._userRole!=='administrador' && !isAdmMaster()) { console.warn('Apenas administrador pode rodar a migração.'); return; }
+  const snap = await getDocs(collection(db,'usuarios'));
+  let migrados=0, jaOk=0, semUid=0;
+  for (const d of snap.docs) {
+    const data = d.data();
+    if (!data.uid) { semUid++; continue; }
+    if (d.id === data.uid) { jaOk++; continue; }
+    await setDoc(doc(db,'usuarios',data.uid), data);
+    await deleteDoc(doc(db,'usuarios',d.id));
+    migrados++;
+  }
+  console.log(`Migração concluída: ${migrados} migrado(s), ${jaOk} já corretos, ${semUid} sem campo uid.`);
+};
 window._registros   = [];
 window._clientes    = [];
 window._embCat      = [];
@@ -1221,9 +1239,16 @@ onAuthStateChanged(auth, async (user) => {
     window._currentUser = user;
     // Load user role from Firestore
     try {
-      const snap = await getDocs(query(collection(db,'usuarios'), where('uid','==',user.uid)));
-      if (!snap.empty) {
-        const ud = snap.docs[0].data();
+      let ud = null;
+      const directSnap = await getDoc(doc(db,'usuarios',user.uid));
+      if (directSnap.exists()) {
+        ud = directSnap.data();
+      } else {
+        // compatibilidade com contas criadas antes da migração do ID do documento = UID
+        const legacySnap = await getDocs(query(collection(db,'usuarios'), where('uid','==',user.uid)));
+        if (!legacySnap.empty) ud = legacySnap.docs[0].data();
+      }
+      if (ud) {
         window._userRole = ud.perfil || 'operador';
         if (ud.ativo === false) { await signOut(auth); showAuthErr('Sua conta está bloqueada. Contate o administrador.'); return; }
       } else {
@@ -1313,7 +1338,7 @@ window.doRegister = async () => {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(cred.user, { displayName: name });
-    await addDoc(collection(db,'usuarios'), { uid:cred.user.uid, nome:name, email:email, ativo:true, perfil:'operador', criadoEm:serverTimestamp() });
+    await setDoc(doc(db,'usuarios',cred.user.uid), { uid:cred.user.uid, nome:name, email:email, ativo:true, perfil:'operador', criadoEm:serverTimestamp() });
     showToast('✓ Conta criada! Bem-vindo(a), '+name+'.');
   } catch(e) {
     const m={'auth/email-already-in-use':'E-mail já cadastrado.','auth/invalid-email':'E-mail inválido.','auth/weak-password':'Senha muito fraca.'};
