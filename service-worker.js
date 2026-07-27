@@ -8,7 +8,7 @@
 //  - Navegação (abrir o app): network-first com fallback para o cache,
 //    para permitir abrir o app mesmo offline (mostrando a última versão).
  
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `magius-embalagens-${CACHE_VERSION}`;
  
 // Domínios que NUNCA devem ser interceptados/cacheados pelo Service Worker.
