@@ -7,8 +7,61 @@
 //    atualizados e não podem ficar "presos" em cache.
 //  - Navegação (abrir o app): network-first com fallback para o cache,
 //    para permitir abrir o app mesmo offline (mostrando a última versão).
+//
+// ── FIREBASE CLOUD MESSAGING ──────────────────────────────────────────
+// Este MESMO service worker também recebe as notificações push do FCM.
+// Importante: só pode existir UM service worker controlando o escopo "/".
+// Por isso, em vez de registrar um "firebase-messaging-sw.js" separado
+// (o que entraria em conflito de escopo com este arquivo), importamos os
+// scripts "compat" do Firebase Messaging aqui dentro. O app (index.html)
+// deve passar EXPLICITAMENTE o registration deste service worker ao
+// chamar getToken() — ver instruções enviadas junto com este arquivo.
+
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: "AIzaSyAmX8gVADeGgS9SFBdN18Y1MmVwzIlC2tE",
+  authDomain: "embalagens-19e30.firebaseapp.com",
+  projectId: "embalagens-19e30",
+  storageBucket: "embalagens-19e30.firebasestorage.app",
+  messagingSenderId: "202746410182",
+  appId: "1:202746410182:web:5275f53f8fe0db3a2b93c7",
+});
+
+const messaging = firebase.messaging();
+
+// Disparado quando chega um push do FCM e o app está em segundo plano ou fechado
+// (com o navegador/PWA ainda ativo o suficiente para acordar o service worker).
+messaging.onBackgroundMessage((payload) => {
+  const dados = payload.notification || {};
+  const titulo = dados.title || 'Magius · Controle de Embalagens';
+  const opcoes = {
+    body: dados.body || '',
+    icon: dados.icon || '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: payload.data?.tag || undefined,
+    renotify: true,
+    data: payload.data || {}
+  };
+  self.registration.showNotification(titulo, opcoes);
+});
+
+// Clique na notificação: foca uma aba já aberta do app ou abre uma nova
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
+  );
+});
  
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v2'; // bump para forçar atualização do SW nos dispositivos (novo: suporte a FCM)
 const CACHE_NAME = `magius-embalagens-${CACHE_VERSION}`;
  
 // Domínios que NUNCA devem ser interceptados/cacheados pelo Service Worker.
