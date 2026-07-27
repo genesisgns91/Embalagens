@@ -332,6 +332,15 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
   .filter-bar .field,.filter-bar > div{width:100%;min-width:0;}
 }
 </style>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js') // Certifique-se de que o nome do seu arquivo SW seja sw.js
+        .then(reg => console.log('Service Worker registrado:', reg))
+        .catch(err => console.error('Erro ao registrar Service Worker:', err));
+    });
+  }
+</script>
 </head>
 <body>
  
