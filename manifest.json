@@ -10,6 +10,15 @@
   "background_color": "#181C26",
   "theme_color": "#00e5a0",
   "icons": [
+     {
+    "src": "gns.png",
+    "type": "image/png"
+  },
+    {
+    "src": "gns-icon.png",
+    "sizes": "512x512",
+    "type": "image/png"
+  }
     {
       "src": "icon-192.png",
       "sizes": "192x192",
@@ -36,17 +45,4 @@
     }
   ]
 }
-{
-"icons": [
-  {
-    "src": "gns-icon.png",
-    "sizes": "192x192",
-    "type": "image/png"
-  },
-  {
-    "src": "gns-icon.png",
-    "sizes": "512x512",
-    "type": "image/png"
-  }
-]
-}
+
