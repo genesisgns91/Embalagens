@@ -335,7 +335,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
   <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js') // Certifique-se de que o nome do seu arquivo SW seja sw.js
+      navigator.serviceWorker.register('/service-worker.js') // Certifique-se de que o nome do seu arquivo SW seja sw.js
         .then(reg => console.log('Service Worker registrado:', reg))
         .catch(err => console.error('Erro ao registrar Service Worker:', err));
     });
