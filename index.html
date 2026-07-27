@@ -6,7 +6,7 @@
 <title>Magius · Controle de Embalagens</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <!-- PWA -->
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#181C26">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -292,6 +292,11 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:14px 18px;font-size:13px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;max-width:300px;}
 .toast.show{transform:translateY(0);opacity:1;}
 .toast.error{border-left-color:var(--warn);}
+
+/* NOTIFICAÇÕES — banner de solicitação de permissão */
+#notif-banner{display:none;position:fixed;bottom:16px;left:16px;right:16px;max-width:460px;margin:0 auto;background:var(--surface2);border:1px solid var(--accent);border-radius:12px;padding:14px 16px;font-size:13px;color:var(--text);z-index:400;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 16px rgba(0,0,0,.3);}
+#notif-banner .nb-text{flex:1;min-width:200px;line-height:1.5;}
+#notif-banner .nb-btns{display:flex;gap:8px;}
  
 /* IMG VIEWER */
 #img-viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;align-items:center;justify-content:center;}
@@ -335,7 +340,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
   <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js') // Certifique-se de que o nome do seu arquivo SW seja sw.js (não é sw, é service-worker)
+      navigator.serviceWorker.register('/service-worker.js') // Certifique-se de que o nome do seu arquivo SW seja sw.js
         .then(reg => console.log('Service Worker registrado:', reg))
         .catch(err => console.error('Erro ao registrar Service Worker:', err));
     });
@@ -401,6 +406,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
     <div class="topbar-brand">Magius · Embalagens</div>
     <div class="topbar-right">
       <div class="user-badge">Olá, <span id="topbar-name">–</span> <span id="topbar-role" class="role-tag"></span></div>
+      <button class="btn btn-secondary btn-sm btn-icon admin-topbar-btn" id="btn-notif" onclick="openModalNotificacoes()" title="Notificações">🔔</button>
       <button class="btn btn-secondary btn-sm btn-icon admin-topbar-btn" id="nav-admin" onclick="switchTab('admin')" title="Administração">⚙</button>
       <button class="btn btn-secondary btn-sm" onclick="doLogout()">Sair</button>
     </div>
@@ -1138,6 +1144,45 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
   </div>
 </div>
  
+<!-- MODAL NOTIFICAÇÕES -->
+<div id="modal-notificacoes" class="modal-overlay">
+  <div class="modal" style="max-width:460px;">
+    <button class="modal-close" onclick="closeModal('modal-notificacoes')">✕</button>
+    <div class="modal-title">🔔 Notificações</div>
+    <div id="notif-permissao-status" style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">–</div>
+    <button class="btn btn-primary" id="btn-ativar-notif" style="width:100%;margin-bottom:20px;" onclick="solicitarPermissaoNotificacao()">🔔 Ativar Notificações</button>
+    <div class="config-row">
+      <div>
+        <div class="config-row-title">Solicitações de Embalagem</div>
+        <div class="config-row-sub">Nova solicitação, atendimento e recusa.</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="notif-toggle-solicitacoes" onchange="onNotifToggleChange('solicitacoes', this.checked)">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="config-row">
+      <div>
+        <div class="config-row-title">Recebimento de Embalagens</div>
+        <div class="config-row-sub">Novo registro de entrada de carga (+Registro).</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="notif-toggle-recebimentos" onchange="onNotifToggleChange('recebimentos', this.checked)">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- BANNER DE SOLICITAÇÃO DE PERMISSÃO DE NOTIFICAÇÃO -->
+<div id="notif-banner">
+  <div class="nb-text">🔔 Ative as notificações para saber, em tempo real, de novas solicitações e recebimentos de embalagens.</div>
+  <div class="nb-btns">
+    <button class="btn btn-primary btn-sm" onclick="solicitarPermissaoNotificacao()">Ativar</button>
+    <button class="btn btn-secondary btn-sm" onclick="dispensarNotifBanner()">Agora não</button>
+  </div>
+</div>
+
 <!-- IMG VIEWER -->
 <div id="img-viewer">
   <button id="img-viewer-close" onclick="closeImgViewer()">✕ Fechar</button>
@@ -1150,7 +1195,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, updateDoc, query, orderBy, where, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, updateDoc, query, orderBy, where, serverTimestamp, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
  
 const firebaseConfig = {
   apiKey: "AIzaSyAmX8gVADeGgS9SFBdN18Y1MmVwzIlC2tE",
@@ -1250,6 +1295,95 @@ window._userRole    = 'visualizador';
 window._isAdmMaster = false;
 window._pendingDeleteId = null;
 window._moduloEstoqueAtivo = false;
+window._notifPrefs = { solicitacoes: true, recebimentos: false };
+let _solUnsub = null, _regUnsub = null;
+ 
+// ── NOTIFICAÇÕES PUSH (locais, via Service Worker) ──────
+// OBS.: Estas notificações disparam em tempo real enquanto o app estiver aberto (ou em
+// segundo plano, com a aba/PWA ainda em execução), usando o listener onSnapshot do Firestore.
+// Para notificações verdadeiramente "em background" com o app totalmente fechado, seria
+// necessário implementar Firebase Cloud Messaging (FCM) + uma Cloud Function no backend.
+function loadNotifPrefs(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('magius_notif_prefs')||'null');
+    if(saved){ window._notifPrefs = { solicitacoes: saved.solicitacoes!==false, recebimentos: !!saved.recebimentos }; }
+  }catch(e){ /* ignora prefs corrompidas */ }
+}
+function saveNotifPrefs(){
+  try{ localStorage.setItem('magius_notif_prefs', JSON.stringify(window._notifPrefs)); }catch(e){}
+}
+loadNotifPrefs();
+ 
+window.solicitarPermissaoNotificacao = async () => {
+  if(!('Notification' in window)){ showToast('Este navegador não suporta notificações.', true); return; }
+  if(Notification.permission==='granted'){ showToast('✓ Notificações já ativadas.'); atualizarUINotificacoes(); return; }
+  if(Notification.permission==='denied'){ showToast('Notificações bloqueadas. Habilite manualmente nas configurações do navegador/celular.', true); atualizarUINotificacoes(); return; }
+  try{
+    const perm = await Notification.requestPermission();
+    atualizarUINotificacoes();
+    showToast(perm==='granted' ? '✓ Notificações ativadas!' : 'Notificações não foram ativadas.', perm!=='granted');
+  }catch(e){ console.error('solicitarPermissaoNotificacao:', e); }
+};
+ 
+// Dispara uma notificação local (via Service Worker) respeitando permissão e preferências do usuário.
+async function showAppNotification(titulo, corpo, tag, categoria){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  if(categoria==='solicitacoes' && !window._notifPrefs.solicitacoes) return;
+  if(categoria==='recebimentos' && !window._notifPrefs.recebimentos) return;
+  try{
+    const options = { body: corpo, icon:'/icon-192.png', badge:'/icon-192.png', tag, renotify:true, data:{url:'/'} };
+    const reg = await navigator.serviceWorker?.getRegistration?.();
+    if(reg && reg.showNotification) await reg.showNotification(titulo, options);
+    else new Notification(titulo, options);
+  }catch(e){ console.error('showAppNotification:', e); }
+}
+window.showAppNotification = showAppNotification;
+ 
+window.atualizarUINotificacoes = () => {
+  const suportado = ('Notification' in window);
+  const perm = suportado ? Notification.permission : 'unsupported';
+  const statusEl   = document.getElementById('notif-permissao-status');
+  const btnAtivar  = document.getElementById('btn-ativar-notif');
+  const chkSol     = document.getElementById('notif-toggle-solicitacoes');
+  const chkReceb   = document.getElementById('notif-toggle-recebimentos');
+  const btnNotifTop= document.getElementById('btn-notif');
+  const banner     = document.getElementById('notif-banner');
+ 
+  if(chkSol)   chkSol.checked   = !!window._notifPrefs.solicitacoes;
+  if(chkReceb) chkReceb.checked = !!window._notifPrefs.recebimentos;
+ 
+  if(!suportado){
+    if(statusEl) statusEl.textContent = 'Este navegador não suporta notificações.';
+    if(btnAtivar) btnAtivar.style.display = 'none';
+    if(banner) banner.style.display = 'none';
+    return;
+  }
+  if(btnAtivar) btnAtivar.style.display = (perm==='granted') ? 'none' : 'inline-flex';
+  if(statusEl){
+    if(perm==='granted')      statusEl.textContent = '✓ Notificações ativadas neste dispositivo.';
+    else if(perm==='denied')  statusEl.textContent = '✕ Notificações bloqueadas. Habilite manualmente nas configurações do navegador/celular para este site.';
+    else                      statusEl.textContent = 'Ative as notificações para ser avisado sobre solicitações e recebimentos em tempo real.';
+  }
+  if(btnNotifTop) btnNotifTop.classList.toggle('active', perm==='granted');
+  if(banner) banner.style.display = (perm==='default' && !localStorage.getItem('magius_notif_banner_dispensado')) ? 'flex' : 'none';
+};
+ 
+window.dispensarNotifBanner = () => {
+  try{ localStorage.setItem('magius_notif_banner_dispensado','1'); }catch(e){}
+  const banner = document.getElementById('notif-banner');
+  if(banner) banner.style.display = 'none';
+};
+ 
+window.onNotifToggleChange = (categoria, checked) => {
+  window._notifPrefs[categoria] = checked;
+  saveNotifPrefs();
+  showToast(checked ? '✓ Notificação ativada.' : 'Notificação desativada.');
+};
+ 
+window.openModalNotificacoes = () => {
+  atualizarUINotificacoes();
+  document.getElementById('modal-notificacoes').classList.add('open');
+};
  
 // ── AUTH STATE ────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
@@ -1286,11 +1420,14 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('f-user').value = user.displayName || user.email;
     applyRoleUI();
     initDatetime();
+    atualizarUINotificacoes();
     await Promise.all([loadClientes(), loadEmbCat(), loadRegistros(), loadConfiguracoes(), loadBaixas(), loadSolicitacoes(), loadAjustesInventario()]);
     addEmbRow();
   } else {
     window._currentUser = null;
     window._registros = []; window._clientes = []; window._embCat = [];
+    if(_solUnsub){ _solUnsub(); _solUnsub = null; }
+    if(_regUnsub){ _regUnsub(); _regUnsub = null; }
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
   }
@@ -2257,11 +2394,39 @@ function renderHistorico(){
  
 // ── SOLICITAÇÕES DE EMBALAGENS ──────────────────────────
 async function loadSolicitacoes(){
-  try{
-    const snap = await getDocs(query(collection(db,'solicitacoes_embalagens'),orderBy('timestamp','desc')));
+  // já existe um listener em tempo real ativo — apenas garante que a tela reflita os dados atuais
+  if(_solUnsub){ renderSolicitacoes(); return; }
+  const q = query(collection(db,'solicitacoes_embalagens'),orderBy('timestamp','desc'));
+  let primeiraCarga = true;
+  _solUnsub = onSnapshot(q, (snap)=>{
     window._solicitacoes = snap.docs.map(d=>({id:d.id,...d.data()}));
     renderSolicitacoes();
-  }catch(e){ console.error('loadSolicitacoes:',e); }
+ 
+    // dispara notificações apenas para mudanças que chegam DEPOIS da carga inicial da tela,
+    // e nunca para a própria ação do usuário atual (ele já viu o resultado na hora)
+    if(!primeiraCarga){
+      snap.docChanges().forEach(change=>{
+        const s = { id: change.doc.id, ...change.doc.data() };
+        const meuUid = window._currentUser?.uid;
+        if(change.type==='added' && s.solicitadoUid!==meuUid){
+          showAppNotification('📋 Nova Solicitação de Embalagem',
+            `${s.clienteNome||'Cliente'} solicitou ${s.qtdSolicitada||0}x ${s.codigo||''}`,
+            'sol-'+s.id, 'solicitacoes');
+        } else if(change.type==='modified'){
+          if(s.status==='ATENDIDO' && s.atendidoUid!==meuUid){
+            showAppNotification('✅ Solicitação Atendida',
+              `${s.codigo||''} para ${s.clienteNome||''} · ${s.qtdAtendida||0} un. entregue(s)`,
+              'sol-at-'+s.id, 'solicitacoes');
+          } else if(s.status==='RECUSADO' && s.recusadoUid!==meuUid){
+            showAppNotification('✕ Solicitação Recusada',
+              `${s.codigo||''} para ${s.clienteNome||''} foi recusada`,
+              'sol-rec-'+s.id, 'solicitacoes');
+          }
+        }
+      });
+    }
+    primeiraCarga = false;
+  }, (err)=>console.error('loadSolicitacoes (onSnapshot):', err));
 }
 window.loadSolicitacoes = loadSolicitacoes;
  
@@ -3028,12 +3193,28 @@ window.salvarRegistro = async () => {
  
 // ── LOAD REGISTROS ─────────────────────────────────────
 async function loadRegistros(){
-  try{
-    const snap=await getDocs(query(collection(db,'registros'),orderBy('timestamp','desc')));
-    window._registros=snap.docs.map(d=>({id:d.id,...d.data()}));
+  // já existe um listener em tempo real ativo — apenas garante que a tela reflita os dados atuais
+  if(_regUnsub){ renderTabela(); if(document.getElementById('embcat-grid')) renderEmbCat(); return; }
+  const q = query(collection(db,'registros'),orderBy('timestamp','desc'));
+  let primeiraCarga = true;
+  _regUnsub = onSnapshot(q, (snap)=>{
+    window._registros = snap.docs.map(d=>({id:d.id,...d.data()}));
     renderTabela();
     if(document.getElementById('embcat-grid')) renderEmbCat();
-  }catch(e){console.error('loadRegistros:',e);showToast('Erro ao carregar registros.',true);}
+ 
+    if(!primeiraCarga){
+      snap.docChanges().forEach(change=>{
+        if(change.type!=='added') return;
+        const r = { id: change.doc.id, ...change.doc.data() };
+        if(r.uid===window._currentUser?.uid) return; // não notifica o próprio autor do registro
+        const nomes = clientesNomesDoRegistro(r);
+        showAppNotification('🚛 Novo Recebimento de Embalagens',
+          `NF ${r.nota||'–'}${nomes.length?' · '+nomes.join(', '):''}`,
+          'reg-'+r.id, 'recebimentos');
+      });
+    }
+    primeiraCarga = false;
+  }, (err)=>{ console.error('loadRegistros (onSnapshot):', err); showToast('Erro ao carregar registros.',true); });
 }
 window.loadRegistros=loadRegistros;
  
@@ -3520,7 +3701,7 @@ window.showToast=(msg,error=false)=>{const t=document.getElementById('toast');t.
 function showErr(el,msg){el.style.display='block';el.textContent=msg;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
  
-['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico','modal-cliente-embalagens','modal-exportar-auditoria'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
+['modal-detail','modal-delete','modal-cliente','modal-delete-cli','modal-emb-cat','modal-delete-emb','modal-import-emb','modal-baixa','modal-atender','modal-recusar','modal-sol-detail','modal-historico','modal-cliente-embalagens','modal-exportar-auditoria','modal-notificacoes'].forEach(id=>document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeModal(id);}));
 document.getElementById('img-viewer')?.addEventListener('click',function(e){if(e.target===this)closeImgViewer();});
 
 // ── PWA: registro do Service Worker ─────────────────────
