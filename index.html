@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Magius · Controle de Embalagens</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="gns.png">
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#181C26">
@@ -1197,6 +1196,7 @@ th.col-receb-a,th.col-receb-b{color:var(--text);}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, updateDoc, query, orderBy, where, serverTimestamp, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getMessaging, getToken, onMessage, isSupported as fcmIsSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
  
 const firebaseConfig = {
   apiKey: "AIzaSyAmX8gVADeGgS9SFBdN18Y1MmVwzIlC2tE",
@@ -1212,6 +1212,29 @@ const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
 const ADMIN_PASS = 'Log#001';
+
+// ── FIREBASE CLOUD MESSAGING (push de verdade, via Cloud Function) ─────
+// Chave pública "Web Push certificate" gerada no Firebase Console
+// (Configurações do projeto → Cloud Messaging → Certificados Web Push).
+const FCM_VAPID_KEY = 'BNFfeBpRMay2c1PLUw7QUxZGSF8NkPzv3SccBsUMdkZ2pqHHqMXXl4ZM2YLDHAG1slC5mAcVZ8zTQE_JH9IV4Fg';
+let messaging = null;
+(async () => {
+  try{
+    if(await fcmIsSupported()){
+      messaging = getMessaging(fbApp);
+      // Mensagens que chegam com o app EM PRIMEIRO PLANO (aberto na tela) não geram
+      // notificação do sistema automaticamente — precisamos exibi-la manualmente aqui.
+      onMessage(messaging, (payload) => {
+        const dados = payload.notification || {};
+        const categoria = payload.data?.categoria || null;
+        const tag = payload.data?.tag || undefined;
+        showAppNotification(dados.title || 'Magius', dados.body || '', tag, categoria);
+      });
+    } else {
+      console.warn('[FCM] Push messaging não é suportado neste navegador/ambiente.');
+    }
+  }catch(e){ console.warn('[FCM] Falha ao inicializar Firebase Messaging:', e); }
+})();
 // identifica o usuário administrador-mestre: possui liberação total, sem necessidade da senha ADMIN_PASS.
 // Fonte da verdade é o campo admMaster no documento /usuarios/{uid} (definido no painel Admin).
 function isAdmMaster(){
@@ -1317,14 +1340,38 @@ loadNotifPrefs();
  
 window.solicitarPermissaoNotificacao = async () => {
   if(!('Notification' in window)){ showToast('Este navegador não suporta notificações.', true); return; }
-  if(Notification.permission==='granted'){ showToast('✓ Notificações já ativadas.'); atualizarUINotificacoes(); return; }
+  if(Notification.permission==='granted'){ showToast('✓ Notificações já ativadas.'); atualizarUINotificacoes(); obterESalvarTokenFCM(); return; }
   if(Notification.permission==='denied'){ showToast('Notificações bloqueadas. Habilite manualmente nas configurações do navegador/celular.', true); atualizarUINotificacoes(); return; }
   try{
     const perm = await Notification.requestPermission();
     atualizarUINotificacoes();
     showToast(perm==='granted' ? '✓ Notificações ativadas!' : 'Notificações não foram ativadas.', perm!=='granted');
+    if(perm==='granted') obterESalvarTokenFCM();
   }catch(e){ console.error('solicitarPermissaoNotificacao:', e); }
 };
+ 
+// Obtém o token FCM deste dispositivo/navegador e salva em fcm_tokens/{token} no Firestore,
+// para que a Cloud Function saiba para quais dispositivos enviar push quando algo acontecer.
+// Usar o próprio token como ID do documento evita duplicados e permite múltiplos
+// dispositivos por usuário (cada um gera um token diferente).
+async function obterESalvarTokenFCM(){
+  if(!messaging){ console.warn('[FCM] Messaging não inicializado (sem suporte neste navegador).'); return; }
+  if(Notification.permission!=='granted') return;
+  if(!window._currentUser) return;
+  try{
+    const swReg = await navigator.serviceWorker.ready;
+    const token = await getToken(messaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: swReg });
+    if(!token){ console.warn('[FCM] Não foi possível obter o token deste dispositivo.'); return; }
+    await setDoc(doc(db,'fcm_tokens', token), {
+      token,
+      uid: window._currentUser.uid,
+      usuario: window._currentUser.displayName || window._currentUser.email || '',
+      userAgent: navigator.userAgent,
+      atualizadoEm: serverTimestamp()
+    }, { merge: true });
+  }catch(e){ console.error('[FCM] obterESalvarTokenFCM:', e); }
+}
+window.obterESalvarTokenFCM = obterESalvarTokenFCM;
  
 // Dispara uma notificação local (via Service Worker) respeitando permissão e preferências do usuário.
 async function showAppNotification(titulo, corpo, tag, categoria){
@@ -1422,6 +1469,7 @@ onAuthStateChanged(auth, async (user) => {
     applyRoleUI();
     initDatetime();
     atualizarUINotificacoes();
+    if(('Notification' in window) && Notification.permission==='granted') obterESalvarTokenFCM();
     await Promise.all([loadClientes(), loadEmbCat(), loadRegistros(), loadConfiguracoes(), loadBaixas(), loadSolicitacoes(), loadAjustesInventario()]);
     addEmbRow();
   } else {
