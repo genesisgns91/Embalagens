@@ -466,6 +466,40 @@
           </label>
         </div>
       </div>
+
+<!-- CONFIGURAÇÃO DE APARÊNCIA -->
+<div class="form-card" id="config-tema-card" style="display:none;">
+  <div class="form-card-title">🎨 Aparência do sistema</div>
+
+  <div class="config-row">
+    <div>
+      <div class="config-row-title">Visual do Sistema</div>
+      <div class="config-row-sub">
+        Escolha o visual utilizado por todo o sistema. A alteração é aplicada imediatamente.
+      </div>
+    </div>
+
+    <div style="min-width:220px;flex:0 1 280px;">
+      <select
+        id="select-tema-sistema"
+        onchange="alterarTemaAdmin(this.value)"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-family:var(--font-body);font-size:13px;outline:none;cursor:pointer;"
+      >
+        <option value="magius">Visual Magius</option>
+        <option value="yms">Visual YMS</option>
+      </select>
+
+      <div
+        id="tema-sistema-descricao"
+        style="font-size:11px;color:var(--text2);margin-top:7px;line-height:1.5;"
+      >
+        Visual atual do Controle de Embalagens.
+      </div>
+    </div>
+  </div>
+</div>
+
+      
       <div class="form-card" id="auditoria-card" style="display:none;">
         <div class="form-card-title">🧾 Auditoria e Compliance</div>
         <div class="config-row">
@@ -1197,39 +1231,77 @@ function applyRoleUI() {
   const r = window._userRole;
   const canWrite = r === 'operador' || r === 'administrador';
   const canAdmin = r === 'administrador';
- 
+
   // Registro tab
   document.getElementById('reg-no-access').style.display = canWrite ? 'none' : 'block';
   document.getElementById('reg-form-wrap').style.display = canWrite ? 'block' : 'none';
- 
+
   // Solicitações tab
   const solNoAccess = document.getElementById('sol-no-access');
   const solFormWrap = document.getElementById('sol-form-wrap');
-  if (solNoAccess) solNoAccess.style.display = canWrite ? 'none' : 'block';
-  if (solFormWrap) solFormWrap.style.display = canWrite ? 'block' : 'none';
- 
-  // Clientes tab
-  document.getElementById('btn-novo-cliente').style.display = canWrite ? 'inline-flex' : 'none';
- 
-  // EmbCat tab
-  document.getElementById('btn-nova-emb-cat').style.display = canWrite ? 'inline-flex' : 'none';
-  document.getElementById('btn-import-emb-cat').style.display = canAdmin ? 'inline-flex' : 'none';
- 
-  // Config de módulos (Adm) — visível apenas para administrador
-  const cfgCard = document.getElementById('config-modulo-card');
-  if (cfgCard) cfgCard.style.display = canAdmin ? 'block' : 'none';
 
-  // Auditoria e Compliance (Adm) — visível apenas para administrador
+  if (solNoAccess) {
+    solNoAccess.style.display = canWrite ? 'none' : 'block';
+  }
+
+  if (solFormWrap) {
+    solFormWrap.style.display = canWrite ? 'block' : 'none';
+  }
+
+  // Clientes tab
+  document.getElementById('btn-novo-cliente').style.display =
+    canWrite ? 'inline-flex' : 'none';
+
+  // Embalagens - Catálogo
+  document.getElementById('btn-nova-emb-cat').style.display =
+    canWrite ? 'inline-flex' : 'none';
+
+  document.getElementById('btn-import-emb-cat').style.display =
+    canAdmin ? 'inline-flex' : 'none';
+
+  // Configuração de módulos — somente administrador
+  const cfgCard = document.getElementById('config-modulo-card');
+
+  if (cfgCard) {
+    cfgCard.style.display = canAdmin ? 'block' : 'none';
+  }
+
+  // Configuração de aparência — somente administrador
+  const temaCard = document.getElementById('config-tema-card');
+
+  if (temaCard) {
+    temaCard.style.display = canAdmin ? 'block' : 'none';
+  }
+
+  // Auditoria e Compliance — somente administrador
   const audCard = document.getElementById('auditoria-card');
-  if (audCard) audCard.style.display = canAdmin ? 'block' : 'none';
- 
+
+  if (audCard) {
+    audCard.style.display = canAdmin ? 'block' : 'none';
+  }
+
   // Inventário — acesso exclusivo de administrador
   const invNoAccess = document.getElementById('inv-no-access');
   const invWrap = document.getElementById('inv-wrap');
-  if (invNoAccess) invNoAccess.style.display = canAdmin ? 'none' : 'block';
-  if (invWrap) invWrap.style.display = canAdmin ? 'block' : 'none';
+
+  if (invNoAccess) {
+    invNoAccess.style.display = canAdmin ? 'none' : 'block';
+  }
+
+  if (invWrap) {
+    invWrap.style.display = canAdmin ? 'block' : 'none';
+  }
+
   const btnImportInv = document.getElementById('btn-import-inv');
-  if (btnImportInv) btnImportInv.style.display = canAdmin ? 'inline-flex' : 'none';
+
+  if (btnImportInv) {
+    btnImportInv.style.display = canAdmin ? 'inline-flex' : 'none';
+  }
+
+  // Atualiza a seleção visual do tema no painel administrativo.
+  if (canAdmin) {
+    atualizarTemaAdminUI();
+  }
 }
  
 // ── AUTH FUNCTIONS ─────────────────────────────────────
@@ -1459,7 +1531,86 @@ window.toggleModuloEstoque = async (checked) => {
     chk.disabled = false;
   }
 };
- 
+
+// ── CONFIGURAÇÃO DE TEMA VISUAL ──────────────────────────
+// Etapa 4:
+// Permite ao administrador trocar imediatamente entre:
+//   magius = visual atual do Controle de Embalagens
+//   yms    = visual do Gestão de Janelas
+//
+// Nesta etapa a alteração é apenas visual.
+// O salvamento no Firestore será implementado na Etapa 5.
+
+window.alterarTemaAdmin = (tema) => {
+  // Segurança adicional: somente administrador pode alterar
+  // o tema através do painel administrativo.
+  if (window._userRole !== 'administrador') {
+    showToast('Sem permissão.', true);
+    atualizarTemaAdminUI();
+    return;
+  }
+
+  // Normaliza o valor recebido.
+  tema = String(tema || 'magius').toLowerCase().trim();
+
+  // Aceita somente os dois temas oficiais.
+  if (!['magius', 'yms'].includes(tema)) {
+    tema = 'magius';
+  }
+
+  try {
+    // Aplica o tema imediatamente.
+    aplicarTema(tema);
+
+    // Atualiza os textos e o seletor do painel.
+    atualizarTemaAdminUI();
+
+    // Nesta etapa ainda não existe gravação no Firestore.
+    showToast(
+      tema === 'yms'
+        ? '✓ Visual YMS aplicado.'
+        : '✓ Visual Magius aplicado.'
+    );
+
+  } catch (e) {
+    console.error('alterarTemaAdmin:', e);
+
+    // Em caso de erro, volta para o tema atual conhecido.
+    atualizarTemaAdminUI();
+
+    showToast('Erro ao aplicar o tema: ' + e.message, true);
+  }
+};
+
+window.atualizarTemaAdminUI = () => {
+  const select = document.getElementById('select-tema-sistema');
+  const descricao = document.getElementById('tema-sistema-descricao');
+
+  // Se o painel ainda não estiver renderizado, simplesmente encerra.
+  if (!select) {
+    return;
+  }
+
+  // Usa o tema atualmente aplicado pela função aplicarTema().
+  const temaAtual = ['magius', 'yms'].includes(window._temaAtual)
+    ? window._temaAtual
+    : 'magius';
+
+  // Atualiza o select.
+  select.value = temaAtual;
+
+  // Atualiza a descrição.
+  if (descricao) {
+    if (temaAtual === 'yms') {
+      descricao.textContent =
+        'Visual do Gestão de Janelas / YMS. O sistema assume a aparência do ambiente YMS.';
+    } else {
+      descricao.textContent =
+        'Visual atual do Controle de Embalagens.';
+    }
+  }
+};
+  
 // ── CLIENTES ───────────────────────────────────────────
 async function loadClientes() {
   try {
@@ -3502,12 +3653,24 @@ function dlFile(name,type,content){const a=document.createElement('a');a.href=UR
 function ds(){const d=new Date();return`${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}`;}
  
 // ── ADMIN ──────────────────────────────────────────────
-window.checkAdminPass=()=>{
-  const v=document.getElementById('admin-pass-input').value;
-  const errEl=document.getElementById('admin-error');
-  if(!checkAdminPassOrFail(v,errEl))return;
-  document.getElementById('admin-gate-wrap').style.display='none';document.getElementById('admin-panel').style.display='block';loadUsers();
+window.checkAdminPass = () => {
+  const v = document.getElementById('admin-pass-input').value;
+  const errEl = document.getElementById('admin-error');
+
+  if (!checkAdminPassOrFail(v, errEl)) {
+    return;
+  }
+
+  document.getElementById('admin-gate-wrap').style.display = 'none';
+  document.getElementById('admin-panel').style.display = 'block';
+
+  // Atualiza o seletor de tema com o visual atualmente aplicado.
+  atualizarTemaAdminUI();
+
+  // Carrega os usuários normalmente.
+  loadUsers();
 };
+  
 window.lockAdmin=()=>{
   document.getElementById('admin-gate-wrap').style.display='block';
   document.getElementById('admin-panel').style.display='none';
