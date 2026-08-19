@@ -1301,7 +1301,121 @@ window.togglePass = (inputId, btn) => {
  
 function clearAuthMsgs() { document.getElementById('auth-error').style.display='none'; document.getElementById('auth-success').style.display='none'; }
 function showAuthErr(msg) { const e=document.getElementById('auth-error'); e.style.display='block'; e.textContent=msg; }
- 
+
+
+// ── TEMAS VISUAIS DO SISTEMA ─────────────────────────────
+// Temas disponíveis:
+//   magius = visual atual do Controle de Embalagens
+//   yms    = visual do Gestão de Janelas / YMS
+//
+// Nesta etapa a função apenas aplica o tema visualmente.
+// O salvamento no Firestore será implementado posteriormente.
+
+window._temaAtual = 'magius';
+
+function encontrarLinkTemaYMS() {
+  // Primeiro tenta pelo ID recomendado.
+  let link = document.getElementById('style-yms');
+
+  if (link) {
+    return link;
+  }
+
+  // Compatibilidade caso o link tenha sido criado com outro ID.
+  link = document.querySelector('link[href*="style-yms.css"]');
+
+  return link || null;
+}
+
+function aplicarTema(tema) {
+  // Normaliza o valor recebido.
+  tema = String(tema || 'magius').toLowerCase().trim();
+
+  // Só aceitamos os dois temas oficiais.
+  if (!['magius', 'yms'].includes(tema)) {
+    tema = 'magius';
+  }
+
+  const linkYMS = encontrarLinkTemaYMS();
+
+  // Guarda o tema atualmente aplicado.
+  window._temaAtual = tema;
+
+  // ======================================================
+  // TEMA MAGIUS
+  // ======================================================
+  if (tema === 'magius') {
+    // Desativa o CSS externo do YMS.
+    if (linkYMS) {
+      linkYMS.disabled = true;
+    }
+
+    // Remove identificadores auxiliares do tema YMS.
+    document.documentElement.removeAttribute('data-tema');
+    document.body?.removeAttribute('data-tema');
+
+    // Mantém a identificação do tema atual disponível
+    // para outras partes do sistema.
+    document.documentElement.setAttribute('data-tema-atual', 'magius');
+
+    // Atualiza a cor da barra do navegador/PWA.
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+
+    if (themeColor) {
+      themeColor.setAttribute('content', '#181C26');
+    }
+
+    return;
+  }
+
+  // ======================================================
+  // TEMA YMS
+  // ======================================================
+  if (tema === 'yms') {
+    // Se o link ainda não existir, cria automaticamente.
+    //
+    // Isso deixa a função compatível mesmo que o <link>
+    // não tenha sido encontrado no HTML.
+    let link = linkYMS;
+
+    if (!link) {
+      link = document.createElement('link');
+      link.id = 'style-yms';
+      link.rel = 'stylesheet';
+      link.href = 'style-yms.css';
+
+      document.head.appendChild(link);
+    }
+
+    // Ativa o CSS do YMS.
+    link.disabled = false;
+
+    // Identifica o tema atual no HTML.
+    document.documentElement.setAttribute('data-tema', 'yms');
+    document.body?.setAttribute('data-tema', 'yms');
+    document.documentElement.setAttribute('data-tema-atual', 'yms');
+
+    // Atualiza a cor da barra do navegador/PWA.
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+
+    if (themeColor) {
+      themeColor.setAttribute('content', '#0f172a');
+    }
+
+    return;
+  }
+}
+
+// Disponibiliza globalmente para os controles HTML,
+// painel administrativo e demais scripts do sistema.
+window.aplicarTema = aplicarTema;
+
+// Aplica o visual padrão imediatamente.
+// O carregamento do tema salvo no Firestore será feito
+// posteriormente, na etapa 6.
+aplicarTema('magius');
+
+    
 // ── CONFIGURAÇÕES (chave liga/desliga de módulos) ──────
 async function loadConfiguracoes() {
   try {
