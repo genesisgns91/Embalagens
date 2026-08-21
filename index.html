@@ -474,9 +474,9 @@
 
   <div class="config-row">
     <div>
-      <div class="config-row-title">Visual do Sistema</div>
+      <div class="config-row-title">Tema do Sistema</div>
       <div class="config-row-sub">
-        Escolha o visual utilizado por todo o sistema. A alteração é aplicada imediatamente.
+        Escolha o tema utilizado por todo o sistema, para todos os usuários. A alteração é aplicada imediatamente e salva automaticamente.
       </div>
     </div>
 
@@ -486,15 +486,15 @@
         onchange="alterarTemaAdmin(this.value)"
         style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-family:var(--font-body);font-size:13px;outline:none;cursor:pointer;"
       >
-        <option value="magius">Visual Magius</option>
-        <option value="yms">Visual YMS</option>
+        <option value="magius">Tema Escuro</option>
+        <option value="yms">Tema Claro</option>
       </select>
 
       <div
         id="tema-sistema-descricao"
         style="font-size:11px;color:var(--text2);margin-top:7px;line-height:1.5;"
       >
-        Visual atual do Controle de Embalagens.
+        Tema escuro do Controle de Embalagens.
       </div>
     </div>
   </div>
@@ -1216,6 +1216,7 @@ onAuthStateChanged(auth, async (user) => {
     initDatetime();
     atualizarUINotificacoes();
     if(('Notification' in window) && Notification.permission==='granted') obterESalvarTokenFCM();
+    iniciarSincronizacaoTema();
     await Promise.all([loadClientes(), loadEmbCat(), loadRegistros(), loadConfiguracoes(), loadBaixas(), loadSolicitacoes(), loadAjustesInventario()]);
     addEmbRow();
   } else {
@@ -1223,6 +1224,7 @@ onAuthStateChanged(auth, async (user) => {
     window._registros = []; window._clientes = []; window._embCat = [];
     if(_solUnsub){ _solUnsub(); _solUnsub = null; }
     if(_regUnsub){ _regUnsub(); _regUnsub = null; }
+    pararSincronizacaoTema();
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
   }
@@ -1378,13 +1380,20 @@ function showAuthErr(msg) { const e=document.getElementById('auth-error'); e.sty
 
 // ── TEMAS VISUAIS DO SISTEMA ─────────────────────────────
 // Temas disponíveis:
-//   magius = visual atual do Controle de Embalagens
-//   yms    = visual do Gestão de Janelas / YMS
+//   magius = Tema Escuro (Controle de Embalagens)
+//   yms    = Tema Claro (Gestão de Janelas / YMS)
 //
-// Nesta etapa a função apenas aplica o tema visualmente.
-// O salvamento no Firestore será implementado posteriormente.
+// O tema escolhido é salvo em Firestore (coleção "configuracoes",
+// documento "tema_sistema") e vale para TODOS os usuários do sistema,
+// não apenas para quem o alterou. Um listener em tempo real
+// (onSnapshot) mantém todas as sessões abertas sincronizadas assim
+// que o administrador troca o tema. Um cache em localStorage evita
+// a "piscada" do tema errado enquanto o Firestore ainda não respondeu
+// (por exemplo, logo após um F5).
 
 window._temaAtual = 'magius';
+
+const TEMA_CACHE_KEY = 'magius_tema_sistema';
 
 function encontrarLinkTemaYMS() {
   // Primeiro tenta pelo ID recomendado.
@@ -1413,6 +1422,10 @@ function aplicarTema(tema) {
 
   // Guarda o tema atualmente aplicado.
   window._temaAtual = tema;
+
+  // Cacheia localmente para aplicar instantaneamente no próximo
+  // carregamento, antes mesmo do Firestore responder.
+  try { localStorage.setItem(TEMA_CACHE_KEY, tema); } catch(e) {}
 
   // ======================================================
   // TEMA MAGIUS
@@ -1483,10 +1496,46 @@ function aplicarTema(tema) {
 // painel administrativo e demais scripts do sistema.
 window.aplicarTema = aplicarTema;
 
-// Aplica o visual padrão imediatamente.
-// O carregamento do tema salvo no Firestore será feito
-// posteriormente, na etapa 6.
-aplicarTema('magius');
+// Aplica imediatamente o último tema conhecido (cache local), para
+// evitar a piscada do tema errado antes do login. Assim que o
+// usuário autenticar, iniciarSincronizacaoTema() assume o Firestore
+// como fonte de verdade — compartilhada por todos os usuários — e
+// mantém esta aba em sincronia caso o tema seja trocado em outro
+// lugar.
+let _temaInicialCache = 'magius';
+try {
+  const cache = localStorage.getItem(TEMA_CACHE_KEY);
+  if (cache === 'magius' || cache === 'yms') _temaInicialCache = cache;
+} catch(e) {}
+aplicarTema(_temaInicialCache);
+
+let _temaUnsub = null;
+
+// Assina o documento de tema no Firestore em tempo real: aplica o
+// tema para esta sessão e reage a mudanças feitas pelo administrador
+// em qualquer outra sessão, sem precisar recarregar a página.
+function iniciarSincronizacaoTema() {
+  if (_temaUnsub) return; // já sincronizando
+  try {
+    _temaUnsub = onSnapshot(
+      doc(db, 'configuracoes', 'tema_sistema'),
+      (snap) => {
+        const tema = (snap.exists() && ['magius','yms'].includes(snap.data().tema))
+          ? snap.data().tema
+          : 'magius';
+        aplicarTema(tema);
+        atualizarTemaAdminUI();
+      },
+      (err) => console.error('iniciarSincronizacaoTema (onSnapshot):', err)
+    );
+  } catch(e) { console.error('iniciarSincronizacaoTema:', e); }
+}
+window.iniciarSincronizacaoTema = iniciarSincronizacaoTema;
+
+function pararSincronizacaoTema() {
+  if (_temaUnsub) { _temaUnsub(); _temaUnsub = null; }
+}
+window.pararSincronizacaoTema = pararSincronizacaoTema;
 
     
 // ── CONFIGURAÇÕES (chave liga/desliga de módulos) ──────
@@ -1534,15 +1583,17 @@ window.toggleModuloEstoque = async (checked) => {
 };
 
 // ── CONFIGURAÇÃO DE TEMA VISUAL ──────────────────────────
-// Etapa 4:
-// Permite ao administrador trocar imediatamente entre:
-//   magius = visual atual do Controle de Embalagens
-//   yms    = visual do Gestão de Janelas
+// Permite ao administrador trocar, para TODO o sistema, entre:
+//   magius = Tema Escuro (Controle de Embalagens)
+//   yms    = Tema Claro (Gestão de Janelas / YMS)
 //
-// Nesta etapa a alteração é apenas visual.
-// O salvamento no Firestore será implementado na Etapa 5.
+// A escolha é gravada em Firestore (coleção "configuracoes",
+// documento "tema_sistema") e propagada em tempo real para todas as
+// sessões conectadas via iniciarSincronizacaoTema(). Também fica
+// salva em localStorage como cache, então persiste após F5 mesmo
+// antes do Firestore responder.
 
-window.alterarTemaAdmin = (tema) => {
+window.alterarTemaAdmin = async (tema) => {
   // Segurança adicional: somente administrador pode alterar
   // o tema através do painel administrativo.
   if (window._userRole !== 'administrador') {
@@ -1559,18 +1610,27 @@ window.alterarTemaAdmin = (tema) => {
     tema = 'magius';
   }
 
-  try {
-    // Aplica o tema imediatamente.
-    aplicarTema(tema);
+  const select = document.getElementById('select-tema-sistema');
+  if (select) select.disabled = true;
 
-    // Atualiza os textos e o seletor do painel.
+  try {
+    // Aplica imediatamente nesta sessão (feedback instantâneo).
+    aplicarTema(tema);
     atualizarTemaAdminUI();
 
-    // Nesta etapa ainda não existe gravação no Firestore.
+    // Grava no Firestore: fonte de verdade compartilhada por todos
+    // os usuários. O listener onSnapshot (desta e de todas as
+    // outras sessões abertas) confirma e mantém tudo sincronizado.
+    await setDoc(doc(db, 'configuracoes', 'tema_sistema'), {
+      tema,
+      atualizadoEm: serverTimestamp(),
+      atualizadoPor: window._currentUser?.displayName || window._currentUser?.email || null,
+    });
+
     showToast(
       tema === 'yms'
-        ? '✓ Visual YMS aplicado.'
-        : '✓ Visual Magius aplicado.'
+        ? '✓ Tema Claro aplicado para todo o sistema.'
+        : '✓ Tema Escuro aplicado para todo o sistema.'
     );
 
   } catch (e) {
@@ -1579,7 +1639,9 @@ window.alterarTemaAdmin = (tema) => {
     // Em caso de erro, volta para o tema atual conhecido.
     atualizarTemaAdminUI();
 
-    showToast('Erro ao aplicar o tema: ' + e.message, true);
+    showToast('Erro ao salvar o tema: ' + e.message, true);
+  } finally {
+    if (select) select.disabled = false;
   }
 };
 
@@ -1604,10 +1666,10 @@ window.atualizarTemaAdminUI = () => {
   if (descricao) {
     if (temaAtual === 'yms') {
       descricao.textContent =
-        'Visual do Gestão de Janelas / YMS. O sistema assume a aparência do ambiente YMS.';
+        'Tema Claro (Gestão de Janelas / YMS), aplicado para todos os usuários.';
     } else {
       descricao.textContent =
-        'Visual atual do Controle de Embalagens.';
+        'Tema Escuro do Controle de Embalagens, aplicado para todos os usuários.';
     }
   }
 };

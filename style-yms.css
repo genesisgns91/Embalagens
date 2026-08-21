@@ -3040,19 +3040,13 @@ th.col-receb-b {
 
 @media (max-width: 480px) {
 
-  .topbar {
-    flex-direction: column;
-
-    align-items: stretch;
-
-    gap: 8px;
-  }
-
-  .topbar-right {
-    justify-content: flex-start;
-
-    width: 100%;
-  }
+  /*
+   * O topbar permanece em linha (row) em qualquer largura de tela —
+   * o menu hambúrguer (injetado por responsive.js) deve sempre ficar
+   * fixo no canto superior esquerdo, com a marca ao lado e os ícones
+   * de ação à direita. O empilhamento em coluna que existia aqui
+   * quebrava esse layout na faixa de tela da maioria dos celulares.
+   */
 
   .topbar .btn {
     flex: 0 0 auto;
